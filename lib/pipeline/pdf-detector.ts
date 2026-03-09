@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef } from 'pdf-lib';
 
 export type PDFType = 'digital' | 'scanned';
 
@@ -14,26 +14,41 @@ export interface PDFDetectionResult {
  * Detects whether a PDF is "digital" (has embedded selectable text)
  * or "scanned" (image-only pages, needs OCR).
  *
- * Strategy: count `BT` (Begin Text) operators in the raw PDF byte stream.
- * Digital PDFs have many BT operators (text lines, headers, footers).
- * Scanned PDFs contain mostly image XObjects with minimal/zero BT operators.
+ * Strategy A (primary): Check if any page's Resources dictionary has a /Font
+ * entry. Only digital PDFs embed fonts.
  *
- * Threshold: ≥ 5 BT operators per page → digital.
+ * Strategy B (fallback): Search decompressed stream bytes for BT operators
+ * in the raw PDF byte slice (works for uncompressed streams).
  */
 export async function detectPdfType(buffer: Buffer): Promise<PDFDetectionResult> {
   const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
   const pageCount = Math.max(doc.getPageCount(), 1);
 
-  // Scan raw bytes for BT (Begin Text) operators.
-  // Use latin1 so every byte maps 1:1 — no UTF-8 decoding issues.
+  let pagesWithFonts = 0;
+
+  for (let i = 0; i < pageCount; i++) {
+    const page = doc.getPage(i);
+    // Walk up the resource hierarchy (page-level → inherited)
+    const resourcesObj = page.node.lookup(PDFName.of('Resources'));
+    if (resourcesObj instanceof PDFDict) {
+      const fontEntry = resourcesObj.lookup(PDFName.of('Font'));
+      if (fontEntry) {
+        pagesWithFonts++;
+      }
+    }
+  }
+
+  // If ANY page has fonts → treat whole document as digital.
+  // (Mixed scan+text docs are uncommon in corporate lending.)
+  const hasFonts = pagesWithFonts > 0;
+
+  // Fallback: raw byte scan for uncompressed streams
   const raw = buffer.toString('latin1');
-  const btOperatorsFound = (raw.match(/\bBT\b/g) ?? []).length;
+  const btMatch = raw.match(/\bBT\b/g) ?? [];
+  const btOperatorsFound = btMatch.length;
 
-  const btPerPage = btOperatorsFound / pageCount;
-
-  // ≥ 5 BT per page → treat as digital; otherwise send to OCR pipeline.
-  const type: PDFType = btPerPage >= 5 ? 'digital' : 'scanned';
-  const digitalRatio = Math.min(btPerPage / 10, 1); // normalize to 0–1
+  const type: PDFType = (hasFonts || btOperatorsFound >= 5) ? 'digital' : 'scanned';
+  const digitalRatio = hasFonts ? Math.max(pagesWithFonts / pageCount, 0.5) : Math.min(btOperatorsFound / (pageCount * 10), 1);
 
   return { type, pageCount, digitalRatio, btOperatorsFound };
 }

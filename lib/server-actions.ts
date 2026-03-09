@@ -27,7 +27,7 @@ export async function createApplication(userId: string, data: ApplicationData) {
     applications.set(applicationId, data);
 
     // Log the action
-    auditLogger.logApplicationCreated(userId, applicationId, data);
+    auditLogger.logApplicationCreated(userId, applicationId, data as unknown as Record<string, unknown>);
 
     return {
       success: true,
@@ -103,7 +103,7 @@ export async function createAssessment(
     assessments.set(assessmentId, data);
 
     // Log the action
-    auditLogger.logAssessmentCreated(userId, applicationId, assessmentId, data);
+    auditLogger.logAssessmentCreated(userId, applicationId, assessmentId, data as unknown as Record<string, unknown>);
 
     return {
       success: true,

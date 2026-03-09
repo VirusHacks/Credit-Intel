@@ -1,4 +1,4 @@
-import Mistral from '@mistralai/mistralai';
+import { Mistral } from '@mistralai/mistralai';
 import type { PDFDocumentType } from '@/lib/types';
 
 // Table-heavy document types that benefit from LlamaParse JSON mode

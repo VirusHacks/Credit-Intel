@@ -1,0 +1,275 @@
+'use client';
+
+import { useState } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Factory, Users, Building2, Handshake, BarChart3,
+  ChevronDown, ChevronUp, CheckCircle2, Loader2,
+} from 'lucide-react';
+
+// ─── Schema ──────────────────────────────────────────────────────────────────
+
+const NoteSchema = z.object({
+  category: z.enum([
+    'factory_operations', 'management_quality', 'collateral_inspection',
+    'customer_relationships', 'industry_context',
+  ]),
+  fiveCDimension: z.enum(['character', 'capacity', 'capital', 'collateral', 'conditions']),
+  noteText: z.string().min(10, 'Note must be at least 10 characters'),
+  scoreDelta: z.number().int().min(-20).max(20).optional(),
+});
+
+const FormSchema = z.object({
+  notes: z.array(NoteSchema).min(1),
+});
+
+type FormValues = z.infer<typeof FormSchema>;
+
+// ─── Category config ──────────────────────────────────────────────────────────
+
+interface CategoryConfig {
+  key: FormValues['notes'][number]['category'];
+  label: string;
+  fiveCDimension: FormValues['notes'][number]['fiveCDimension'];
+  description: string;
+  placeholder: string;
+  icon: React.ReactNode;
+  dimensionColor: string;
+}
+
+const CATEGORIES: CategoryConfig[] = [
+  {
+    key: 'factory_operations',
+    label: 'Factory / Operations',
+    fiveCDimension: 'capacity',
+    description: 'Physical infrastructure, machinery condition, production capacity, workforce',
+    placeholder: 'e.g. Factory in Surat SEZ, 120-loom setup, 85% capacity utilisation. Two new Picanol looms installed in 2024. Workforce of 140, mostly skilled. No labour disputes observed...',
+    icon: <Factory className="h-4 w-4" />,
+    dimensionColor: 'bg-blue-100 text-blue-800',
+  },
+  {
+    key: 'management_quality',
+    label: 'Management Quality',
+    fiveCDimension: 'character',
+    description: 'Promoter background, experience, integrity, succession planning',
+    placeholder: 'e.g. Promoter Mr. Rajesh Sharma has 22 years in textile industry. MBA from Nirma University. Honest demeanor, no evasive answers. Second-gen family business, son being groomed...',
+    icon: <Users className="h-4 w-4" />,
+    dimensionColor: 'bg-purple-100 text-purple-800',
+  },
+  {
+    key: 'collateral_inspection',
+    label: 'Collateral Inspection',
+    fiveCDimension: 'collateral',
+    description: 'Property value, encumbrances, marketability, inspection findings',
+    placeholder: 'e.g. Residential plot in Vesu, Surat — current market value ~Rs.1.8Cr. CERSAI search clean. No third-party encumbrances. Title deeds verified with sub-registrar...',
+    icon: <Building2 className="h-4 w-4" />,
+    dimensionColor: 'bg-amber-100 text-amber-800',
+  },
+  {
+    key: 'customer_relationships',
+    label: 'Customer Relationships',
+    fiveCDimension: 'capacity',
+    description: 'Key customers, concentration risk, payment track record, repeat business',
+    placeholder: 'e.g. Top 3 customers — Aditya Birla Fashion, Reliance Retail, and a Dubai exporter — contribute 42% of revenue. Payment track record clean, 30-45 day DSO...',
+    icon: <Handshake className="h-4 w-4" />,
+    dimensionColor: 'bg-green-100 text-green-800',
+  },
+  {
+    key: 'industry_context',
+    label: 'Industry Context',
+    fiveCDimension: 'conditions',
+    description: 'Sector outlook, regulatory environment, competition, macro tailwinds/headwinds',
+    placeholder: 'e.g. Technical textiles seeing strong demand post PLI scheme. Cotton prices stabilising. Chinese competition reduced due to import duties. GST on textiles normalised...',
+    icon: <BarChart3 className="h-4 w-4" />,
+    dimensionColor: 'bg-orange-100 text-orange-800',
+  },
+];
+
+const SCORE_DELTA_OPTIONS = [
+  { value: 10, label: '+10 (Strong positive)' },
+  { value: 5, label: '+5 (Moderate positive)' },
+  { value: 0, label: '0 (Neutral)' },
+  { value: -5, label: '-5 (Moderate concern)' },
+  { value: -10, label: '-10 (Significant concern)' },
+  { value: -20, label: '-20 (Red flag)' },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+interface QualitativeFormProps {
+  appId: string;
+  onSuccess?: () => void;
+}
+
+export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
+  const [expandedCategory, setExpandedCategory] = useState<string | null>('factory_operations');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { register, control, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      notes: CATEGORIES.map((c) => ({
+        category: c.key,
+        fiveCDimension: c.fiveCDimension,
+        noteText: '',
+        scoreDelta: 0,
+      })),
+    },
+  });
+
+  const { fields } = useFieldArray({ control, name: 'notes' });
+  const notesValues = watch('notes');
+
+  const onSubmit = async (values: FormValues) => {
+    // Filter out empty notes
+    const filledNotes = values.notes.filter((n) => n.noteText.trim().length >= 10);
+    if (filledNotes.length === 0) {
+      setError('Please fill in at least one note (minimum 10 characters).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/applications/${appId}/qualify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: filledNotes }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? 'Submission failed');
+        return;
+      }
+      setSubmitted(true);
+      onSuccess?.();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <Card className="flex flex-col items-center gap-4 p-12 text-center">
+        <CheckCircle2 className="h-12 w-12 text-green-500" />
+        <h2 className="text-xl font-bold">Qualitative Notes Submitted</h2>
+        <p className="max-w-md text-muted-foreground">
+          Your field observations have been saved. The AI Reconciler will now synthesise
+          all signals and generate the Credit Appraisal Memo.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold">Qualitative Field Assessment</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Complete your on-site observations. Each note directly influences the 5Cs score.
+          At least one section must be filled.
+        </p>
+      </div>
+
+      {fields.map((field, index) => {
+        const cat = CATEGORIES[index];
+        const noteVal = notesValues[index]?.noteText ?? '';
+        const isExpanded = expandedCategory === cat.key;
+        const hasContent = noteVal.trim().length >= 10;
+
+        return (
+          <Card key={field.id} className={`overflow-hidden transition-all ${hasContent ? 'ring-1 ring-green-400' : ''}`}>
+            {/* Header */}
+            <button
+              type="button"
+              onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
+              className="flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-muted/50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  {cat.icon}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{cat.label}</span>
+                    <Badge variant="outline" className={`text-xs ${cat.dimensionColor}`}>
+                      {cat.fiveCDimension.charAt(0).toUpperCase() + cat.fiveCDimension.slice(1)}
+                    </Badge>
+                    {hasContent && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{cat.description}</p>
+                </div>
+              </div>
+              {isExpanded ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+            </button>
+
+            {/* Body */}
+            {isExpanded && (
+              <div className="space-y-4 border-t p-4">
+                <div>
+                  <Label className="mb-1.5 block text-sm font-medium">
+                    Field Observations <span className="text-muted-foreground">(min 10 chars)</span>
+                  </Label>
+                  <Textarea
+                    {...register(`notes.${index}.noteText`)}
+                    placeholder={cat.placeholder}
+                    rows={5}
+                    className="resize-none text-sm"
+                  />
+                  {errors.notes?.[index]?.noteText && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.notes[index].noteText?.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="mb-1.5 block text-sm font-medium">
+                    Score Impact on{' '}
+                    <span className="capitalize">{cat.fiveCDimension}</span> dimension
+                  </Label>
+                  <select
+                    {...register(`notes.${index}.scoreDelta`, { valueAsNumber: true })}
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  >
+                    {SCORE_DELTA_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </Card>
+        );
+      })}
+
+      {error && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Submitting notes...
+          </>
+        ) : (
+          'Submit Qualitative Assessment → Trigger Reconciler'
+        )}
+      </Button>
+    </form>
+  );
+}

@@ -3,6 +3,8 @@ import { put } from '@vercel/blob';
 import { db } from '@/lib/db/config';
 import { documents } from '@/lib/db/schema';
 
+const IS_DEV = process.env.NODE_ENV === 'development';
+
 const VALID_DOC_TYPES = [
   'bank_statement',
   'gst_return',
@@ -47,19 +49,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Upload to Vercel Blob ────────────────────────────────────────────────
-    if (!process.env.VERCEL_BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json(
-        { error: 'VERCEL_BLOB_READ_WRITE_TOKEN not configured' },
-        { status: 503 },
-      );
-    }
-
+    // ── Upload: Vercel Blob (prod) or local filesystem (dev) ─────────────────
     const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const blob = await put(`documents/${Date.now()}-${safeName}`, file, {
-      access: 'public',
-      contentType: 'application/pdf',
-    });
+    const uniqueName = `${Date.now()}-${safeName}`;
+    let blobUrl: string;
+
+    if (IS_DEV) {
+      // Save to public/dev-uploads/ so Next.js serves it as a static file
+      const { writeFileSync, mkdirSync } = await import('fs');
+      const { join } = await import('path');
+      const uploadDir = join(process.cwd(), 'public', 'dev-uploads');
+      mkdirSync(uploadDir, { recursive: true });
+      const buffer = Buffer.from(await file.arrayBuffer());
+      writeFileSync(join(uploadDir, uniqueName), buffer);
+      blobUrl = `http://localhost:3000/dev-uploads/${uniqueName}`;
+      console.log('[upload] Dev mode — saved locally:', blobUrl);
+    } else {
+      if (!process.env.VERCEL_BLOB_READ_WRITE_TOKEN) {
+        return NextResponse.json(
+          { error: 'VERCEL_BLOB_READ_WRITE_TOKEN not configured' },
+          { status: 503 },
+        );
+      }
+      const blob = await put(`documents/${uniqueName}`, file, {
+        access: 'public',
+        contentType: 'application/pdf',
+      });
+      blobUrl = blob.url;
+    }
 
     // ── Optional DB insert (if applicationId is already known) ───────────────
     let documentId: string | undefined;
@@ -72,7 +89,7 @@ export async function POST(request: NextRequest) {
           fileType: 'application/pdf',
           documentType: documentType as 'bank_statement' | 'gst_return' | 'itr' | 'annual_report' | 'cibil_report' | 'financial_statement' | 'sanction_letter' | 'other',
           fileSize: file.size,
-          s3Path: blob.url,
+          s3Path: blobUrl,
         })
         .returning({ id: documents.id });
       documentId = doc.id;
@@ -80,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       documentId,
-      blobUrl: blob.url,
+      blobUrl,
       fileName: file.name,
       fileSize: file.size,
       documentType,

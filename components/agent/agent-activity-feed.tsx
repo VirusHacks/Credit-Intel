@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import {
@@ -10,136 +11,219 @@ import {
   FileText,
   TrendingUp,
   Zap,
+  XCircle,
 } from 'lucide-react';
 
-interface ActivityItem {
-  id: string;
-  step: string;
-  agent: string;
-  action: string;
-  status: 'completed' | 'in-progress' | 'pending';
-  confidence: number;
-  timestamp: string;
-  details?: string;
+// ─── Live event type from /api/pipeline/status/[id] SSE ──────────────────────
+interface PipelineEvent {
+  appId: string;
+  stage: string;
+  status: 'processing' | 'done' | 'failed';
+  progress?: number;
+  confidence?: number;
+  message?: string;
+  thinkTokens?: string;
+  ts: number;
 }
 
-const activities: ActivityItem[] = [
-  {
-    id: '1',
-    step: 'Document Verification',
-    agent: 'Document Validator',
-    action: 'Verified 5 financial documents',
-    status: 'completed',
-    confidence: 0.98,
-    timestamp: '2024-03-15 10:00',
-    details: 'All documents passed integrity checks',
-  },
-  {
-    id: '2',
-    step: 'Financial Analysis',
-    agent: 'Financial Analyzer',
-    action: 'Analyzed financial statements and ratios',
-    status: 'completed',
-    confidence: 0.95,
-    timestamp: '2024-03-15 10:15',
-    details: 'Debt-to-equity ratio: 0.38, Current ratio: 2.1',
-  },
-  {
-    id: '3',
-    step: 'Risk Assessment',
-    agent: 'Risk Assessor',
-    action: 'Evaluating business and market risks',
-    status: 'in-progress',
-    confidence: 0.87,
-    timestamp: '2024-03-15 10:30',
-    details: 'Processing industry benchmarks',
-  },
-  {
-    id: '4',
-    step: 'Credit Scoring',
-    agent: 'Credit Scorer',
-    action: 'Pending credit score calculation',
-    status: 'pending',
-    confidence: 0,
-    timestamp: 'Pending',
-  },
-  {
-    id: '5',
-    step: 'Report Generation',
-    agent: 'Report Generator',
-    action: 'Pending final report compilation',
-    status: 'pending',
-    confidence: 0,
-    timestamp: 'Pending',
-  },
-];
+// ─── Derived display type ─────────────────────────────────────────────────────
+interface ActivityItem {
+  id: string;
+  stage: string;
+  status: 'completed' | 'in-progress' | 'pending' | 'failed';
+  confidence: number;
+  message: string;
+  timestamp: string;
+}
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return <CheckCircle2 className="w-5 h-5 text-green-600" />;
-    case 'in-progress':
-      return <Zap className="w-5 h-5 text-blue-600 animate-pulse" />;
-    default:
-      return <Clock className="w-5 h-5 text-gray-400" />;
-  }
-};
+// Static pipeline stage ordering (used as fallback for pending steps)
+const STAGE_ORDER = [
+  'ingest',
+  'bank_statement',
+  'gst_analyzer',
+  'itr_balancesheet',
+  'cibil_cmr',
+  'scout',
+  'qualitative_gate',
+  'reconciler',
+  'cam_generator',
+] as const;
 
-const getAgentIcon = (agent: string) => {
-  if (agent.includes('Document')) return <FileText className="w-4 h-4" />;
-  if (agent.includes('Financial')) return <TrendingUp className="w-4 h-4" />;
-  if (agent.includes('Risk')) return <AlertCircle className="w-4 h-4" />;
-  return <Brain className="w-4 h-4" />;
-};
+function stageLabel(stage: string): string {
+  const labels: Record<string, string> = {
+    ingest: 'Document Ingest',
+    bank_statement: 'Bank Statement Agent',
+    gst_analyzer: 'GST Filing Agent',
+    itr_balancesheet: 'ITR / Balance Sheet Agent',
+    cibil_cmr: 'CIBIL CMR Agent',
+    scout: 'OSINT Scout Agent',
+    qualitative_gate: 'Qualitative Input Gate',
+    reconciler: 'DeepSeek-R1 Reconciler',
+    cam_generator: 'CAM PDF Generator',
+  };
+  return labels[stage] ?? stage.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 };
 
-export function AgentActivityFeed() {
+function StatusIcon({ status }: { status: ActivityItem['status'] }) {
+  if (status === 'completed') return <CheckCircle2 className="w-5 h-5 text-green-600" />;
+  if (status === 'in-progress') return <Zap className="w-5 h-5 text-blue-600 animate-pulse" />;
+  if (status === 'failed') return <XCircle className="w-5 h-5 text-red-600" />;
+  return <Clock className="w-5 h-5 text-gray-400" />;
+}
+
+function StageIcon({ stage }: { stage: string }) {
+  if (stage.includes('ingest') || stage.includes('document')) return <FileText className="w-4 h-4" />;
+  if (stage.includes('bank') || stage.includes('gst') || stage.includes('itr')) return <TrendingUp className="w-4 h-4" />;
+  if (stage.includes('cibil') || stage.includes('risk')) return <AlertCircle className="w-4 h-4" />;
+  return <Brain className="w-4 h-4" />;
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+interface AgentActivityFeedProps {
+  /** Real application UUID; if omitted, shows demo/static data */
+  appId?: string;
+}
+
+export function AgentActivityFeed({ appId }: AgentActivityFeedProps) {
+  const [events, setEvents] = useState<Map<string, PipelineEvent>>(new Map());
+  const [thinkStream, setThinkStream] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    if (!appId) return;
+
+    let currentEs: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+
+    function connect() {
+      if (stopped) return;
+      const es = new EventSource(`/api/pipeline/status/${appId}`);
+      currentEs = es;
+      esRef.current = es;
+      setIsConnected(true);
+
+      es.onmessage = (e) => {
+        try {
+          const event = JSON.parse(e.data as string) as PipelineEvent;
+
+          if (event.thinkTokens) {
+            setThinkStream((prev) => prev + event.thinkTokens);
+            return;
+          }
+
+          // Terminal events — stop reconnecting only when truly done
+          if (
+            (event.stage === 'end' && (event.status === 'complete' || event.status === 'failed')) ||
+            (event.stage === 'cam_generator' && event.status === 'done')
+          ) {
+            stopped = true;
+            es.close();
+            setIsConnected(false);
+            return;
+          }
+
+          setEvents((prev) => {
+            const next = new Map(prev);
+            next.set(event.stage, event);
+            return next;
+          });
+        } catch {
+          // ignore parse errors
+        }
+      };
+
+      es.onerror = () => {
+        setIsConnected(false);
+        es.close();
+        // Auto-reconnect after 2s unless terminated
+        if (!stopped) {
+          reconnectTimer = setTimeout(connect, 2000);
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      stopped = true;
+      clearTimeout(reconnectTimer);
+      currentEs?.close();
+      setIsConnected(false);
+    };
+  }, [appId]);
+
+  // Build sorted activity list from events map
+  const activities: ActivityItem[] = STAGE_ORDER.map((stage) => {
+    const ev = events.get(stage);
+    if (!ev) {
+      return {
+        id: stage,
+        stage,
+        status: 'pending' as const,
+        confidence: 0,
+        message: 'Waiting…',
+        timestamp: '',
+      };
+    }
+    return {
+      id: stage,
+      stage,
+      status: ev.status === 'done' ? 'completed' : ev.status === 'failed' ? 'failed' : 'in-progress',
+      confidence: ev.confidence ?? 0,
+      message: ev.message ?? ev.status,
+      timestamp: new Date(ev.ts).toLocaleTimeString(),
+    };
+  });
+
   const completedCount = activities.filter((a) => a.status === 'completed').length;
   const totalSteps = activities.length;
+  const progress = (completedCount / totalSteps) * 100;
 
   return (
     <div className="space-y-6">
-      {/* Progress Overview */}
+      {/* Progress overview */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">AI Agent Progress</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900">AI Agent Pipeline</h3>
+            {isConnected && (
+              <span className="flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-500 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
+              </span>
+            )}
+          </div>
           <span className="text-2xl font-bold text-blue-600">
             {completedCount}/{totalSteps}
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <motion.div
-            className="bg-gradient-to-r from-blue-600 to-blue-500 h-2 rounded-full"
+            className="bg-gradient-to-r from-blue-600 to-indigo-500 h-2 rounded-full"
             initial={{ width: '0%' }}
-            animate={{ width: `${(completedCount / totalSteps) * 100}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
           />
         </div>
         <p className="text-sm text-gray-600 mt-3">
-          {completedCount} of {totalSteps} analysis steps completed
+          {completedCount} of {totalSteps} pipeline stages completed
+          {!appId && ' (connect an appId for live updates)'}
         </p>
       </Card>
 
-      {/* Activity Timeline */}
+      {/* Timeline */}
       <motion.div
         className="space-y-3"
         variants={containerVariants}
@@ -147,59 +231,43 @@ export function AgentActivityFeed() {
         animate="visible"
       >
         {activities.map((activity, index) => (
-          <motion.div
-            key={activity.id}
-            variants={itemVariants}
-            className="relative"
-          >
-            {/* Timeline connector */}
+          <motion.div key={activity.id} variants={itemVariants} className="relative">
             {index < activities.length - 1 && (
-              <div className="absolute left-6 top-16 w-1 h-12 bg-gray-200" />
+              <div className="absolute left-6 top-16 w-0.5 h-10 bg-gray-200 z-0" />
             )}
 
             <Card
-              className={`p-4 border-l-4 transition-all ${
-                activity.status === 'completed'
-                  ? 'border-l-green-600 bg-green-50 hover:shadow-md'
-                  : activity.status === 'in-progress'
-                  ? 'border-l-blue-600 bg-blue-50 hover:shadow-md'
-                  : 'border-l-gray-300 bg-gray-50'
-              }`}
+              className={`p-4 border-l-4 transition-all relative z-10 ${activity.status === 'completed'
+                ? 'border-l-green-600 bg-green-50'
+                : activity.status === 'in-progress'
+                  ? 'border-l-blue-600 bg-blue-50'
+                  : activity.status === 'failed'
+                    ? 'border-l-red-500 bg-red-50'
+                    : 'border-l-gray-300 bg-gray-50'
+                }`}
             >
               <div className="flex items-start gap-4">
-                {/* Status Icon */}
-                <div className="flex-shrink-0 mt-1">
-                  {getStatusIcon(activity.status)}
+                <div className="flex-shrink-0 mt-0.5">
+                  <StatusIcon status={activity.status} />
                 </div>
-
-                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-gray-900">{activity.step}</p>
-                      <p className="text-sm text-gray-600 flex items-center gap-1 mt-0.5">
-                        {getAgentIcon(activity.agent)}
-                        {activity.agent}
+                      <p className="font-semibold text-gray-900 text-sm">{stageLabel(activity.stage)}</p>
+                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                        <StageIcon stage={activity.stage} />
+                        {activity.message}
                       </p>
                     </div>
                     {activity.confidence > 0 && (
-                      <div className="text-right flex-shrink-0">
-                        <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-white text-gray-700 border border-gray-200">
-                          {(activity.confidence * 100).toFixed(0)}% confident
-                        </span>
-                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded bg-white text-gray-700 border border-gray-200 flex-shrink-0">
+                        {(activity.confidence * 100).toFixed(0)}%
+                      </span>
                     )}
                   </div>
-
-                  <p className="text-sm text-gray-700 mt-2">{activity.action}</p>
-
-                  {activity.details && (
-                    <p className="text-xs text-gray-600 mt-2 p-2 bg-white rounded border border-gray-200">
-                      {activity.details}
-                    </p>
+                  {activity.timestamp && (
+                    <p className="text-xs text-gray-400 mt-1">{activity.timestamp}</p>
                   )}
-
-                  <p className="text-xs text-gray-500 mt-2">{activity.timestamp}</p>
                 </div>
               </div>
             </Card>
@@ -207,30 +275,18 @@ export function AgentActivityFeed() {
         ))}
       </motion.div>
 
-      {/* Decision Tree */}
-      <Card className="p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Decision Rationale</h3>
-        <div className="space-y-3">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs font-semibold text-blue-900 mb-1">Risk Level: MEDIUM</p>
-            <p className="text-xs text-blue-800">
-              Based on industry risk (medium) and financial metrics (acceptable debt levels)
-            </p>
+      {/* Live think token stream (reconciler only) */}
+      {thinkStream && (
+        <Card className="p-4">
+          <h3 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
+            <Brain className="w-4 h-4 text-indigo-600 animate-pulse" />
+            DeepSeek-R1 Reasoning (live)
+          </h3>
+          <div className="bg-gray-50 rounded p-3 max-h-48 overflow-y-auto text-xs text-gray-600 font-mono whitespace-pre-wrap">
+            {thinkStream}
           </div>
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-xs font-semibold text-green-900 mb-1">Financial Health: GOOD</p>
-            <p className="text-xs text-green-800">
-              Strong profitability metrics with improving cash flow trends
-            </p>
-          </div>
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs font-semibold text-amber-900 mb-1">Recommendation: APPROVE</p>
-            <p className="text-xs text-amber-800">
-              Subject to standard credit conditions and covenant requirements
-            </p>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }

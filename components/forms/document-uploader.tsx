@@ -7,14 +7,14 @@ import { Upload, X, File, CheckCircle, AlertCircle, Loader2 } from 'lucide-react
 
 // ─── Document type options (Indian context) ────────────────────────────────
 const DOCUMENT_TYPES = [
-  { value: 'bank_statement',    label: 'Bank Statement' },
-  { value: 'gst_return',        label: 'GST Return (GSTR-3B / 2A)' },
-  { value: 'itr',               label: 'ITR (Income Tax Return)' },
-  { value: 'annual_report',     label: 'Annual Report' },
-  { value: 'cibil_report',      label: 'CIBIL Commercial Report' },
+  { value: 'bank_statement', label: 'Bank Statement' },
+  { value: 'gst_return', label: 'GST Return (GSTR-3B / 2A)' },
+  { value: 'itr', label: 'ITR (Income Tax Return)' },
+  { value: 'annual_report', label: 'Annual Report' },
+  { value: 'cibil_report', label: 'CIBIL Commercial Report' },
   { value: 'financial_statement', label: 'Financial Statement / Balance Sheet' },
-  { value: 'sanction_letter',   label: 'Sanction Letter' },
-  { value: 'other',             label: 'Other' },
+  { value: 'sanction_letter', label: 'Sanction Letter' },
+  { value: 'other', label: 'Other' },
 ] as const;
 
 /** Auto-guess document type from filename keywords */
@@ -93,11 +93,9 @@ export function DocumentUploader({
   };
 
   const removeFile = (localId: string) => {
-    setFileItems((prev) => {
-      const updated = prev.filter((f) => f.localId !== localId);
-      notifyParent(updated);
-      return updated;
-    });
+    const updated = fileItems.filter((f) => f.localId !== localId);
+    setFileItems(updated);
+    notifyParent(updated);
   };
 
   const notifyParent = (items: FileItem[]) => {
@@ -143,14 +141,12 @@ export function DocumentUploader({
 
     const results = await Promise.all(pending.map(uploadSingle));
 
-    setFileItems((prev) => {
-      const updated = prev.map((i) => {
-        const r = results.find((r) => r.localId === i.localId);
-        return r ?? i;
-      });
-      notifyParent(updated);
-      return updated;
+    const nextItems = fileItems.map((i) => {
+      const r = results.find((r) => r.localId === i.localId);
+      return r ?? i;
     });
+    setFileItems(nextItems);
+    notifyParent(nextItems);
   };
 
   const pendingCount = fileItems.filter((i) => i.status === 'pending').length;
@@ -164,11 +160,10 @@ export function DocumentUploader({
         onDragLeave={() => setIsDragging(false)}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); setIsDragging(false); addFiles(Array.from(e.dataTransfer.files)); }}
-        className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-          isDragging
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-        }`}
+        className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${isDragging
+          ? 'border-blue-500 bg-blue-50'
+          : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+          }`}
       >
         <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
         <h3 className="mt-2 text-sm font-semibold">Drag PDF files here</h3>
@@ -227,13 +222,12 @@ export function DocumentUploader({
             {fileItems.map((item) => (
               <div
                 key={item.localId}
-                className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
-                  item.status === 'error'
-                    ? 'border-red-200 bg-red-50'
-                    : item.status === 'done'
-                      ? 'border-green-200 bg-green-50'
-                      : 'bg-card'
-                }`}
+                className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${item.status === 'error'
+                  ? 'border-red-200 bg-red-50'
+                  : item.status === 'done'
+                    ? 'border-green-200 bg-green-50'
+                    : 'bg-card'
+                  }`}
               >
                 {/* Status icon */}
                 <div className="shrink-0">

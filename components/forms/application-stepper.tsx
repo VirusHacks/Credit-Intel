@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -11,7 +12,7 @@ import {
   StepReview,
 } from './form-steps';
 import type { UploadedDocResult } from './document-uploader';
-import { ChevronRight, Check } from 'lucide-react';
+import { ChevronRight, Check, Loader2 } from 'lucide-react';
 
 interface FormData {
   // Company Info
@@ -58,7 +59,10 @@ const STEPS = [
 ];
 
 export function ApplicationStepper() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
     registrationNumber: '',
@@ -98,9 +102,49 @@ export function ApplicationStepper() {
     }
   };
 
-  const handleSubmit = () => {
-    console.log('Submitting application:', formData);
-    alert('Application submitted successfully!');
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: formData.companyName,
+          industry: formData.industry || undefined,
+          cin: formData.registrationNumber || undefined,
+          requestedAmountInr: formData.requestedAmount || undefined,
+          city: formData.city || undefined,
+          state: formData.state || undefined,
+          // Pass uploaded docs so server can create DB records before starting pipeline
+          uploadedDocuments: formData.documents.map((d) => ({
+            blobUrl: d.blobUrl,
+            fileName: d.fileName,
+            fileSize: d.fileSize,
+            documentType: d.documentType,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        throw new Error(err.error ?? 'Submission failed');
+      }
+      const { id, companyName } = await res.json() as { id: string; companyName: string };
+
+      // Explicitly kick off the pipeline via the dedicated route (reliable, dedicated handler)
+      // Don't await — this is intentionally async so we can redirect immediately
+      fetch('/api/pipeline/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appId: id, companyName }),
+      }).catch(() => {/* detail page will auto-trigger as fallback */ });
+
+      // Navigate to detail page — it will also auto-trigger if pipeline didn't start
+      router.push(`/applications/${id}`);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'Submission failed');
+      setSubmitting(false);
+    }
   };
 
   const updateFormData = (data: Partial<FormData>) => {
@@ -116,13 +160,12 @@ export function ApplicationStepper() {
             <div key={step.id} className="flex flex-1 items-center">
               <div className="flex flex-col items-center">
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition-all ${
-                    index + 1 < currentStep
-                      ? 'border-green-600 bg-green-600 text-white'
-                      : index + 1 === currentStep
-                        ? 'border-blue-600 bg-blue-600 text-white'
-                        : 'border-muted-foreground bg-background text-muted-foreground'
-                  }`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition-all ${index + 1 < currentStep
+                    ? 'border-green-600 bg-green-600 text-white'
+                    : index + 1 === currentStep
+                      ? 'border-blue-600 bg-blue-600 text-white'
+                      : 'border-muted-foreground bg-background text-muted-foreground'
+                    }`}
                 >
                   {index + 1 < currentStep ? (
                     <Check className="h-5 w-5" />
@@ -136,9 +179,8 @@ export function ApplicationStepper() {
               </div>
               {index + 1 < STEPS.length && (
                 <div
-                  className={`mx-2 h-1 flex-1 transition-all ${
-                    index + 1 < currentStep ? 'bg-green-600' : 'bg-muted'
-                  }`}
+                  className={`mx-2 h-1 flex-1 transition-all ${index + 1 < currentStep ? 'bg-green-600' : 'bg-muted'
+                    }`}
                 />
               )}
             </div>
@@ -170,17 +212,25 @@ export function ApplicationStepper() {
         <Button
           variant="outline"
           onClick={handlePrevious}
-          disabled={currentStep === 1}
+          disabled={currentStep === 1 || submitting}
         >
           Previous
         </Button>
-        <div className="flex gap-4">
+        <div className="flex flex-col items-end gap-2">
+          {submitError && (
+            <p className="text-sm text-red-600">{submitError}</p>
+          )}
           {currentStep === STEPS.length ? (
             <Button
               className="gap-2 bg-green-600 hover:bg-green-700"
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
+              disabled={submitting}
             >
-              Submit Application
+              {submitting ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Starting Analysis…</>
+              ) : (
+                'Submit & Start Analysis'
+              )}
             </Button>
           ) : (
             <Button

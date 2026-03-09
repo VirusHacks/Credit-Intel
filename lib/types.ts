@@ -30,7 +30,7 @@ export type StageStatus = 'pending' | 'processing' | 'done' | 'failed';
 
 export type PDFDocumentType =
   | 'bank_statement' | 'gst_return' | 'itr' | 'annual_report'
-  | 'cibil_report' | 'sanction_letter' | 'balance_sheet';
+  | 'cibil_report' | 'sanction_letter' | 'financial_statement' | 'other';
 
 // ─── Agent Signal (single extracted data point) ─────────────────────────────
 export interface AgentSignal {

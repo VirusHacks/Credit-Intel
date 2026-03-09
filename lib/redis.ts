@@ -26,4 +26,7 @@ export const redisKeys = {
 
   /** SSE Pub/Sub channel per application for live progress feed */
   pipelineEvents: (appId: string) => `pipeline:events:${appId}`,
+
+  /** Per-stage status hash (pollable by SSE endpoint) */
+  pipelineStages: (appId: string) => `pipeline_stages:${appId}`,
 };

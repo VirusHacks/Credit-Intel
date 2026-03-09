@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
-const publicRoutes = ['/login', '/api/auth/login'];
+const publicRoutes = [
+  '/login',
+  '/api/auth/login',
+  // Pipeline & document APIs — no JWT needed for service calls
+  '/api/documents',
+  '/api/pipeline',
+];
 const adminRoutes = ['/admin', '/audit', '/settings'];
 const analystRoutes = ['/applications', '/analysis', '/documents'];
 
@@ -62,5 +68,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|dev-uploads).*)'],
 };

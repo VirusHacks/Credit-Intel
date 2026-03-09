@@ -1,75 +1,92 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { AgentActivityFeed } from '@/components/agent/agent-activity-feed';
-import { Explainability } from '@/components/agent/explainability';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Zap } from 'lucide-react';
+import { MainNav } from '@/components/layout/main-nav';
+import { Brain, Loader2, ChevronDown } from 'lucide-react';
+import type { AppListItem } from '@/components/tables/applications-table';
 
 export default function AnalysisPage() {
+  const [apps, setApps] = useState<AppListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/applications?limit=100')
+      .then((r) => r.json())
+      .then((d: { data: AppListItem[] }) => {
+        setApps(d.data);
+        // Auto-select the most recently active application
+        const active = d.data.find((a) =>
+          ['ingesting', 'analyzing', 'reconciling', 'generating_cam', 'awaiting_qualitative', 'complete'].includes(a.pipelineStatus)
+        );
+        if (active) setSelectedId(active.id);
+        else if (d.data.length > 0) setSelectedId(d.data[0].id);
+      })
+      .catch(() => { })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const selected = apps.find((a) => a.id === selectedId);
+
   return (
-    <main className="flex-1 overflow-auto">
-      <div className="p-6 md:p-8 bg-gray-50 min-h-screen">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <Brain className="w-8 h-8 text-blue-600" />
-              AI Analysis & Explainability
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Monitor agent activities and understand decision-making process
-            </p>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Application ID</p>
-                  <p className="text-xl font-bold text-gray-900 mt-1">APP-2024-001</p>
-                </div>
-                <Zap className="w-8 h-8 text-yellow-500" />
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div>
-                <p className="text-sm text-gray-600">Status</p>
-                <p className="text-xl font-bold text-blue-600 mt-1">In Progress</p>
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div>
-                <p className="text-sm text-gray-600">Estimated Time</p>
-                <p className="text-xl font-bold text-gray-900 mt-1">5-10 mins</p>
-              </div>
-            </Card>
-          </div>
-
-          {/* Main Content Tabs */}
-          <Tabs defaultValue="activities" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="activities" className="gap-2">
-                <Zap className="w-4 h-4" />
-                Agent Activities
-              </TabsTrigger>
-              <TabsTrigger value="explainability" className="gap-2">
-                <Brain className="w-4 h-4" />
-                Decision Explanation
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="activities" className="space-y-6">
-              <AgentActivityFeed />
-            </TabsContent>
-
-            <TabsContent value="explainability" className="space-y-6">
-              <Explainability />
-            </TabsContent>
-          </Tabs>
+    <div className="min-h-screen bg-gray-50">
+      <MainNav />
+      <main className="mx-auto max-w-6xl space-y-6 p-6 sm:p-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <Brain className="w-8 h-8 text-blue-600" />
+            AI Analysis Monitor
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Watch the agent pipeline run in real time for any application.
+          </p>
         </div>
-      </div>
-    </main>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          </div>
+        ) : apps.length === 0 ? (
+          <Card className="p-12 text-center">
+            <p className="text-muted-foreground">No applications yet. Create one and run the pipeline to monitor it here.</p>
+          </Card>
+        ) : (
+          <>
+            {/* App selector */}
+            <Card className="p-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Monitor application:</label>
+                <div className="relative flex-1 min-w-52">
+                  <select
+                    value={selectedId}
+                    onChange={(e) => setSelectedId(e.target.value)}
+                    className="w-full appearance-none rounded-md border border-input bg-background px-3 py-2 pr-8 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {apps.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.companyName ?? 'Unnamed'} — {a.pipelineStatus.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                </div>
+                {selected && (
+                  <div className="flex gap-4 text-sm">
+                    <span className="text-muted-foreground">Industry: <strong>{selected.industry ?? '—'}</strong></span>
+                    <span className="text-muted-foreground">Progress: <strong>{selected.pipelineStatus.replace(/_/g, ' ')}</strong></span>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Activity feed */}
+            {selectedId && <AgentActivityFeed appId={selectedId} />}
+          </>
+        )}
+      </main>
+    </div>
   );
 }

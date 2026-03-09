@@ -11,7 +11,12 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx lib/db/seed.ts"
+    "db:seed": "tsx lib/db/seed.ts",
+    "gen:samples": "node scripts/generate-sample-docs.mjs",
+    "test:upload": "node scripts/test-upload.mjs",
+    "test:agents": "node scripts/test-agents.mjs",
+    "test:agents:bank": "node scripts/test-agents.mjs --only=bank",
+    "test:agents:scout": "node scripts/test-agents.mjs --only=scout"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -71,6 +76,7 @@
     "mem0ai": "^2.2.4",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
+    "openai": "^6.27.0",
     "pdf-lib": "^1.17.1",
     "react": "19.2.4",
     "react-day-picker": "9.13.2",
@@ -87,6 +93,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

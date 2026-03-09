@@ -1,0 +1,22 @@
+{
+  "bank": {
+    "blobUrl": "http://localhost:3000/dev-uploads/1772973342442-bank-statement.pdf",
+    "documentId": "bank"
+  },
+  "gst": {
+    "blobUrl": "http://localhost:3000/dev-uploads/1772973377061-gst-return.pdf",
+    "documentId": "gst"
+  },
+  "itr": {
+    "blobUrl": "http://localhost:3000/dev-uploads/1772973402925-itr.pdf",
+    "documentId": "itr"
+  },
+  "bs": {
+    "blobUrl": "http://localhost:3000/dev-uploads/1772973420469-balance-sheet.pdf",
+    "documentId": "bs"
+  },
+  "cibil": {
+    "blobUrl": "http://localhost:3000/dev-uploads/1772973438702-cibil-report.pdf",
+    "documentId": "cibil"
+  }
+}

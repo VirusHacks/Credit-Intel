@@ -1,39 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MainNav } from '@/components/layout/main-nav';
-import { ApplicationsTable } from '@/components/tables/applications-table';
+import { ApplicationsTable, AppListItem } from '@/components/tables/applications-table';
 import { Button } from '@/components/ui/button';
-import { mockApplications } from '@/lib/mock-data';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
+
+const PIPELINE_FILTERS = [
+  { value: null, label: 'All' },
+  { value: 'not_started', label: 'Not Started' },
+  { value: 'analyzing', label: 'Analyzing' },
+  { value: 'awaiting_qualitative', label: 'Awaiting Field Input' },
+  { value: 'complete', label: 'Complete' },
+  { value: 'failed', label: 'Failed' },
+];
 
 export default function ApplicationsPage() {
-  const [applications, setApplications] = useState(mockApplications);
+  const [applications, setApplications] = useState<AppListItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
-  const filteredApplications = statusFilter
-    ? applications.filter((app) => app.status === statusFilter)
-    : applications;
-
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this application?')) {
-      setApplications(applications.filter((app) => app.id !== id));
+  const fetchApplications = async (filter: string | null) => {
+    setLoading(true);
+    try {
+      const url = filter ? `/api/applications?status=${filter}&limit=100` : '/api/applications?limit=100';
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json() as { data: AppListItem[] };
+        setApplications(json.data);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusCounts = () => {
-    return {
-      all: applications.length,
-      approved: applications.filter((app) => app.status === 'approved').length,
-      underReview: applications.filter(
-        (app) => app.status === 'under_review'
-      ).length,
-      rejected: applications.filter((app) => app.status === 'rejected').length,
-    };
-  };
+  useEffect(() => { void fetchApplications(statusFilter); }, [statusFilter]);
 
-  const counts = getStatusCounts();
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this application?')) return;
+    // Optimistic remove
+    setApplications((prev) => prev.filter((a) => a.id !== id));
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -57,54 +65,28 @@ export default function ApplicationsPage() {
 
         {/* Status Filter Tabs */}
         <div className="flex flex-wrap gap-2 border-b">
-          <button
-            onClick={() => setStatusFilter(null)}
-            className={`px-4 py-2 font-medium transition-colors ${
-              statusFilter === null
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            All ({counts.all})
-          </button>
-          <button
-            onClick={() => setStatusFilter('approved')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              statusFilter === 'approved'
-                ? 'border-b-2 border-green-600 text-green-600'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Approved ({counts.approved})
-          </button>
-          <button
-            onClick={() => setStatusFilter('under_review')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              statusFilter === 'under_review'
-                ? 'border-b-2 border-yellow-600 text-yellow-600'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Under Review ({counts.underReview})
-          </button>
-          <button
-            onClick={() => setStatusFilter('rejected')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              statusFilter === 'rejected'
-                ? 'border-b-2 border-red-600 text-red-600'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Rejected ({counts.rejected})
-          </button>
+          {PIPELINE_FILTERS.map((f) => (
+            <button key={f.label}
+              onClick={() => setStatusFilter(f.value)}
+              className={`px-4 py-2 font-medium transition-colors ${statusFilter === f.value
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-muted-foreground hover:text-foreground'
+                }`}>
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* Table */}
-        <ApplicationsTable
-          applications={filteredApplications}
-          onDelete={handleDelete}
-        />
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          </div>
+        ) : (
+          <ApplicationsTable applications={applications} onDelete={handleDelete} />
+        )}
       </main>
     </div>
   );
 }
+
