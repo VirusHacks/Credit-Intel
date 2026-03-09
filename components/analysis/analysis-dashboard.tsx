@@ -7,8 +7,10 @@ import {
     AlertTriangle, CheckCircle2, XCircle, FileText, Search,
     Brain, ChevronDown, ChevronUp, ExternalLink, Loader2,
     BarChart3, Eye, TrendingDown, Activity, Users,
-    BadgeAlert, ShieldCheck, Info,
+    BadgeAlert, ShieldCheck, Info, Zap,
 } from 'lucide-react';
+import { DiscrepancyEngine, computeDiscrepancies } from './discrepancy-engine';
+import { Explainability } from '@/components/agent/explainability';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface Signal {
@@ -187,13 +189,20 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
     const [loading, setLoading] = useState(true);
     const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
     const [expandedSection, setExpandedSection] = useState<string | null>('overview');
+    const [promoterHistory, setPromoterHistory] = useState<{ available: boolean; din: string | null; memories: Array<{ id: string; memory: string; created_at?: string }> } | null>(null);
 
     useEffect(() => {
         async function load() {
             try {
-                const res = await fetch(`/api/applications/${appId}/analysis`);
-                if (res.ok) {
-                    setData(await res.json() as AnalysisData);
+                const [analysisRes, promoterRes] = await Promise.all([
+                    fetch(`/api/applications/${appId}/analysis`),
+                    fetch(`/api/applications/${appId}/promoter-history`),
+                ]);
+                if (analysisRes.ok) {
+                    setData(await analysisRes.json() as AnalysisData);
+                }
+                if (promoterRes.ok) {
+                    setPromoterHistory(await promoterRes.json());
                 }
             } finally {
                 setLoading(false);
@@ -242,10 +251,13 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
 
     const sections = [
         { id: 'overview', label: 'Overview', icon: <Eye className="h-4 w-4" /> },
+        { id: 'discrepancy', label: 'Discrepancy Engine', icon: <Zap className="h-4 w-4" /> },
         { id: 'financials', label: 'Financial Signals', icon: <TrendingUp className="h-4 w-4" /> },
         { id: 'research', label: 'Research & OSINT', icon: <Search className="h-4 w-4" /> },
+        { id: 'promoter', label: 'Promoter DNA', icon: <Brain className="h-4 w-4" /> },
         { id: 'fieldnotes', label: 'Field Notes', icon: <Users className="h-4 w-4" /> },
         { id: 'documents', label: 'Documents', icon: <FileText className="h-4 w-4" /> },
+        { id: 'explainability', label: 'AI Explainability', icon: <Brain className="h-4 w-4" /> },
         { id: 'pipeline', label: 'Pipeline Audit', icon: <Activity className="h-4 w-4" /> },
     ];
 
@@ -258,8 +270,8 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                     <button key={s.id}
                         onClick={() => setExpandedSection(expandedSection === s.id ? null : s.id)}
                         className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all ${expandedSection === s.id
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
                             }`}>
                         {s.icon}
                         {s.label}
@@ -359,6 +371,19 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                             </div>
                         </div>
                     </Card>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════
+          SECTION: Discrepancy Engine (Cross-Document Fraud Detection)
+         ══════════════════════════════════════════════════════════════ */}
+            {expandedSection === 'discrepancy' && (
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                        Cross-document verification engine — automatically triangulates data across GST returns, bank statements,
+                        ITR filings, and CIBIL reports to detect revenue inflation, circular trading, and hidden defaults.
+                    </p>
+                    <DiscrepancyEngine checks={computeDiscrepancies(signalsByAgent)} />
                 </div>
             )}
 
@@ -561,7 +586,7 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                                 <Card key={i} className="p-4">
                                     <div className="flex items-start gap-3">
                                         <div className={`rounded-full p-2 flex-shrink-0 ${(note.scoreDelta ?? 0) > 0 ? 'bg-green-100' :
-                                                (note.scoreDelta ?? 0) < 0 ? 'bg-red-100' : 'bg-gray-100'
+                                            (note.scoreDelta ?? 0) < 0 ? 'bg-red-100' : 'bg-gray-100'
                                             }`}>
                                             {(note.scoreDelta ?? 0) > 0 ? <TrendingUp className="h-4 w-4 text-green-600" /> :
                                                 (note.scoreDelta ?? 0) < 0 ? <TrendingDown className="h-4 w-4 text-red-600" /> :
@@ -640,6 +665,81 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
             )}
 
             {/* ══════════════════════════════════════════════════════════════
+          SECTION: Promoter DNA (mem0)
+         ══════════════════════════════════════════════════════════════ */}
+            {expandedSection === 'promoter' && (
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                        Cross-application promoter memory powered by <span className="font-semibold">mem0</span>. Tracks promoter history across all loan applications by DIN.
+                    </p>
+
+                    {!promoterHistory?.available ? (
+                        <Card className="p-8 text-center">
+                            <Brain className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                            <p className="text-sm font-medium text-gray-600">mem0 Not Configured</p>
+                            <p className="text-xs text-muted-foreground mt-1">Set <code className="bg-gray-100 px-1 rounded">MEM0_API_KEY</code> in .env.local to enable Promoter DNA tracking.</p>
+                        </Card>
+                    ) : !promoterHistory.din ? (
+                        <Card className="p-8 text-center">
+                            <Info className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                            <p className="text-sm font-medium text-gray-600">No Promoter DIN on File</p>
+                            <p className="text-xs text-muted-foreground mt-1">Add a Director Identification Number (DIN) to the application to enable promoter history lookup.</p>
+                        </Card>
+                    ) : promoterHistory.memories.length === 0 ? (
+                        <Card className="p-8 text-center">
+                            <ShieldCheck className="h-10 w-10 text-green-400 mx-auto mb-3" />
+                            <p className="text-sm font-medium text-gray-600">First Application for DIN {promoterHistory.din}</p>
+                            <p className="text-xs text-muted-foreground mt-1">No prior loan applications found for this promoter. History will be recorded after CAM generation.</p>
+                        </Card>
+                    ) : (
+                        <div className="space-y-3">
+                            <Card className="px-5 py-3 bg-purple-50 border-purple-200">
+                                <div className="flex items-center gap-2">
+                                    <Brain className="h-5 w-5 text-purple-600" />
+                                    <div>
+                                        <p className="text-sm font-medium text-purple-800">Promoter DIN: {promoterHistory.din}</p>
+                                        <p className="text-xs text-purple-600">{promoterHistory.memories.length} memory record{promoterHistory.memories.length !== 1 ? 's' : ''} found across prior applications</p>
+                                    </div>
+                                </div>
+                            </Card>
+
+                            {promoterHistory.memories.map((mem, idx) => (
+                                <Card key={mem.id || idx} className="p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-0.5 flex-shrink-0">
+                                            <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                                <FileText className="h-4 w-4 text-purple-600" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{mem.memory}</pre>
+                                            {mem.created_at && (
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    Recorded: {new Date(mem.created_at).toLocaleString('en-IN')}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════
+          SECTION: AI Explainability
+         ══════════════════════════════════════════════════════════════ */}
+            {expandedSection === 'explainability' && (
+                <Explainability
+                    cam={cam}
+                    agentCount={Object.keys(signalsByAgent).length}
+                    signalCount={totalSignals}
+                    avgConfidence={Math.round(avgConfidence * 100)}
+                />
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════
           SECTION: Pipeline Audit Trail
          ══════════════════════════════════════════════════════════════ */}
             {expandedSection === 'pipeline' && (
@@ -671,9 +771,9 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                                                 <div className="flex items-center gap-2">
                                                     <p className="text-sm font-medium text-gray-900 capitalize">{stage.stage.replace(/_/g, ' ')}</p>
                                                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${isDone ? 'bg-green-100 text-green-700' :
-                                                            isFailed ? 'bg-red-100 text-red-700' :
-                                                                isProcessing ? 'bg-blue-100 text-blue-700' :
-                                                                    'bg-gray-100 text-gray-600'
+                                                        isFailed ? 'bg-red-100 text-red-700' :
+                                                            isProcessing ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-gray-100 text-gray-600'
                                                         }`}>
                                                         {stage.status}
                                                     </span>

@@ -193,8 +193,11 @@ Example:
 
 The **score delta from qualitative input is shown explicitly** — judges can see exactly how the Credit Officer's observation moved the number.
 
-### Layer 4 — DeepSeek-R1 Thinking Chain (The Killer Feature)
-DeepSeek-R1 produces `<think>...</think>` tokens before its answer. We capture this reasoning trace and surface it in a collapsible **"View AI Reasoning"** panel in the UI.
+### Layer 4 — AI Thinking Chain (The Killer Feature)
+Gemini 2.5 Flash is prompted to produce `<think>...</think>` reasoning blocks before its answer. We capture this reasoning trace and surface it in a collapsible **"View AI Reasoning"** panel in the UI.
+
+### Layer 5 — Interactive AI Chat
+Credit Officers can open a chat panel and ask natural language questions about any applicant. The chat is powered by Gemini 2.5 Flash with the full context of all agent results, research findings, and qualitative notes.
 
 Example of what judges will see:
 ```
@@ -316,7 +319,7 @@ Ask the judge: "What would a system trained on American data do with a CMR rank 
 | 0:00–0:45 | The Problem | "A credit manager today takes 10 days and misses 40% of early warning signals buried in documents. We cut that to 5 minutes with zero missed signals." |
 | 0:45–1:30 | The Architecture | Show the LangGraph flow diagram. "6 specialized agents, running in parallel, on the same application, in the same 5 minutes." |
 | 1:30–2:30 | Live Demo — Upload | Upload a sample PDF set. Show the live agent activity feed as Redis Blackboard fills up. |
-| 2:30–3:30 | Live Demo — CAM | Open the generated CAM. Hover a number for its source tooltip. Click "View AI Reasoning." Read one line of DeepSeek-R1's thinking chain out loud. |
+| 2:30–3:30 | Live Demo — CAM | Open the generated CAM. Hover a number for its source tooltip. Click "View AI Reasoning." Read one line of the thinking chain out loud. Open the AI Chat — ask a question about the applicant. |
 | 3:30–4:15 | Indian Context | Show the GSTR mismatch table. Explain CMR rank. "We built this for India, not adapted from the West." |
 | 4:15–5:00 | Close | Show the PDF download. Show the audit trail. "Every decision, every source, every confidence score — fully audit-ready for RBI inspection." |
 
@@ -327,7 +330,8 @@ Ask the judge: "What would a system trained on American data do with a CMR rank 
 1. **Adaptive Extraction** — Smart routing between Gemini native and Mistral OCR based on PDF type. Not one-size-fits-all OCR.
 2. **DIN-based Research** — Director lookup by unique ID, not name. Zero false positives.
 3. **7-Check Discrepancy Engine** — Monthly-granularity GST vs Bank vs ITR triangulation across all document sources simultaneously.
-4. **Visible AI Reasoning** — DeepSeek-R1 thinking chain surfaced in the UI. The AI thinks out loud.
-5. **Qualitative Score Delta** — Credit Officer notes don't just annotate the CAM; they visibly move the scores with attribution.
-6. **Promoter DNA via mem0** — Cross-application memory: a promoter's history follows them across subsidiaries, just like it should at a real bank.
-7. **RBI + CRISIL + CMR** — The only parameters Indian judges will actually test for. All covered, all correct.
+4. **Visible AI Reasoning** — Gemini thinking chain surfaced in the UI. The AI thinks out loud.
+5. **Qualitative Score Delta** — Credit Officer notes don’t just annotate the CAM; they visibly move the scores with attribution.
+6. **Promoter DNA via mem0** — Cross-application memory: a promoter’s history follows them across subsidiaries, just like it should at a real bank.
+7. **Interactive AI Chat** — Credit Officers can ask "Why was this score low?" and get cited answers in real time.
+8. **RBI + CRISIL + CMR** — The only parameters Indian judges will actually test for. All covered, all correct.

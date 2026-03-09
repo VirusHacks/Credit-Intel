@@ -1,62 +1,79 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, Brain, Lightbulb } from 'lucide-react';
+import {
+  ChevronDown, ChevronUp, Brain, Lightbulb, Shield, TrendingUp,
+  Landmark, Building2, ClipboardList, Cpu, Layers, Sparkles,
+} from 'lucide-react';
 import { useState } from 'react';
 
-interface DecisionFactor {
-  name: string;
-  impact: 'positive' | 'negative' | 'neutral';
-  score: number;
-  description: string;
+// ─── Types ─────────────────────────────────────────────────────────────────
+interface FiveCData {
+  score: number | null;
+  rating: string | null;
+  explanation: string | null;
 }
 
-const decisionFactors: DecisionFactor[] = [
-  {
-    name: 'Debt-to-Equity Ratio',
-    impact: 'positive',
-    score: 8.5,
-    description: 'Healthy leverage with 0.38 ratio, indicating strong equity base',
-  },
-  {
-    name: 'Current Ratio',
-    impact: 'positive',
-    score: 8.2,
-    description: 'Strong liquidity position at 2.1x, well above minimum threshold',
-  },
-  {
-    name: 'Revenue Growth',
-    impact: 'positive',
-    score: 7.8,
-    description: '12% YoY growth demonstrates positive business momentum',
-  },
-  {
-    name: 'Profit Margin',
-    impact: 'neutral',
-    score: 6.5,
-    description: 'Net profit margin of 14.4%, slightly below industry average of 16%',
-  },
-  {
-    name: 'Industry Risk',
-    impact: 'negative',
-    score: 5.2,
-    description: 'Technology sector faces moderate cyclical risks',
-  },
-  {
-    name: 'Management Experience',
-    impact: 'positive',
-    score: 8.8,
-    description: 'CEO has 15+ years industry experience, strong track record',
-  },
-];
+interface CamData {
+  decision: string;
+  characterScore: number | null;
+  capacityScore: number | null;
+  capitalScore: number | null;
+  collateralScore: number | null;
+  conditionsScore: number | null;
+  characterRating: string | null;
+  capacityRating: string | null;
+  capitalRating: string | null;
+  collateralRating: string | null;
+  conditionsRating: string | null;
+  characterExplanation: string | null;
+  capacityExplanation: string | null;
+  capitalExplanation: string | null;
+  collateralExplanation: string | null;
+  conditionsExplanation: string | null;
+  recommendedAmountInr: string | null;
+  recommendedRatePercent: string | null;
+  reductionRationale: string | null;
+  conditions: string[] | null;
+  thinkingTrace: string | null;
+}
 
-export function Explainability() {
-  const [expandedId, setExpandedId] = useState<number | null>(0);
+interface ExplainabilityProps {
+  cam?: CamData | null;
+  agentCount?: number;
+  signalCount?: number;
+  avgConfidence?: number;
+}
 
-  const positiveFactors = decisionFactors.filter((f) => f.impact === 'positive').length;
-  const negativeFactors = decisionFactors.filter((f) => f.impact === 'negative').length;
+const FIVE_C_META = [
+  { key: 'character', icon: <Shield className="w-5 h-5" />, label: 'Character', desc: 'Creditworthiness, reputation, promoter track record & repayment history', weight: '25%' },
+  { key: 'capacity', icon: <TrendingUp className="w-5 h-5" />, label: 'Capacity', desc: 'Ability to repay from cash flows, DSCR, and income stability', weight: '25%' },
+  { key: 'capital', icon: <Landmark className="w-5 h-5" />, label: 'Capital', desc: 'Net worth, equity, tangible net worth, and financial reserves', weight: '20%' },
+  { key: 'collateral', icon: <Building2 className="w-5 h-5" />, label: 'Collateral', desc: 'Assets pledged as security — value, liquidity, and coverage ratio', weight: '15%' },
+  { key: 'conditions', icon: <ClipboardList className="w-5 h-5" />, label: 'Conditions', desc: 'Industry outlook, macro environment, regulatory climate & loan purpose', weight: '15%' },
+] as const;
+
+function getImpact(score: number | null): 'positive' | 'negative' | 'neutral' {
+  if (!score) return 'neutral';
+  return score >= 65 ? 'positive' : score >= 45 ? 'neutral' : 'negative';
+}
+
+export function Explainability({ cam, agentCount = 5, signalCount = 0, avgConfidence = 0 }: ExplainabilityProps) {
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+
+  // Build factors from real CAM data
+  const factors = FIVE_C_META.map(meta => {
+    const score = cam ? (cam[`${meta.key}Score` as keyof CamData] as number | null) : null;
+    const rating = cam ? (cam[`${meta.key}Rating` as keyof CamData] as string | null) : null;
+    const explanation = cam ? (cam[`${meta.key}Explanation` as keyof CamData] as string | null) : null;
+    return { ...meta, score, rating, explanation, impact: getImpact(score) };
+  });
+
+  const positiveFactors = factors.filter(f => f.impact === 'positive').length;
+  const negativeFactors = factors.filter(f => f.impact === 'negative').length;
+  const overallScore = cam
+    ? Math.round(factors.reduce((s, f) => s + (f.score ?? 0), 0) / factors.length)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -67,131 +84,133 @@ export function Explainability() {
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Decision Explanation</h3>
             <p className="text-sm text-gray-700 mb-4">
-              The AI credit assessment model analyzed {decisionFactors.length} key factors to reach
-              the final credit recommendation. Below is a detailed breakdown of how each factor
-              influenced the decision.
+              {cam
+                ? `The AI reconciler analyzed ${signalCount} data points from ${agentCount} specialized agents to produce this credit assessment. Each of the Five C's is scored independently with transparent reasoning.`
+                : 'Run the AI pipeline and generate a CAM to see the explainability breakdown.'}
             </p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                <p className="text-xs text-gray-600">Supporting Factors</p>
+                <p className="text-xs text-gray-600">Overall Score</p>
+                <p className={`text-xl font-bold mt-1 ${(overallScore ?? 0) >= 65 ? 'text-green-600' : (overallScore ?? 0) >= 45 ? 'text-amber-600' : 'text-red-600'}`}>
+                  {overallScore ?? '—'}<span className="text-xs font-normal text-gray-500">/100</span>
+                </p>
+              </div>
+              <div className="p-3 bg-white rounded-lg border border-indigo-200">
+                <p className="text-xs text-gray-600">Supporting C&apos;s</p>
                 <p className="text-xl font-bold text-green-600 mt-1">{positiveFactors}</p>
               </div>
               <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                <p className="text-xs text-gray-600">Challenging Factors</p>
-                <p className="text-xl font-bold text-amber-600 mt-1">{negativeFactors}</p>
+                <p className="text-xs text-gray-600">Weak C&apos;s</p>
+                <p className="text-xl font-bold text-red-600 mt-1">{negativeFactors}</p>
               </div>
               <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                <p className="text-xs text-gray-600">Overall Confidence</p>
-                <p className="text-xl font-bold text-blue-600 mt-1">91%</p>
+                <p className="text-xs text-gray-600">Avg Confidence</p>
+                <p className="text-xl font-bold text-blue-600 mt-1">{avgConfidence > 0 ? `${Math.round(avgConfidence * 100)}%` : '—'}</p>
               </div>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Decision Factors */}
+      {/* Five C's Factor Analysis */}
       <div className="space-y-3">
         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-amber-600" />
-          Detailed Factor Analysis
+          Five C&apos;s Contrastive Scoring
         </h3>
 
-        {decisionFactors.map((factor, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
+        {factors.map(factor => {
+          const isExpanded = expandedKey === factor.key;
+          const borderColor = factor.impact === 'positive' ? 'border-l-green-600' : factor.impact === 'negative' ? 'border-l-red-600' : 'border-l-gray-400';
+          const scoreColor = factor.impact === 'positive' ? 'text-green-600' : factor.impact === 'negative' ? 'text-red-600' : 'text-gray-600';
+          const ratingCls = factor.rating === 'Strong' ? 'bg-green-100 text-green-700' : factor.rating === 'Adequate' ? 'bg-blue-100 text-blue-700' : factor.rating === 'Weak' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+
+          return (
             <Card
-              className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                factor.impact === 'positive'
-                  ? 'border-l-4 border-l-green-600'
-                  : factor.impact === 'negative'
-                  ? 'border-l-4 border-l-red-600'
-                  : 'border-l-4 border-l-gray-400'
-              }`}
-              onClick={() => setExpandedId(expandedId === index ? null : index)}
+              key={factor.key}
+              className={`p-4 cursor-pointer transition-all hover:shadow-md border-l-4 ${borderColor} ${isExpanded ? 'ring-2 ring-blue-200' : ''}`}
+              onClick={() => setExpandedKey(isExpanded ? null : factor.key)}
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{factor.name}</p>
-                  <p className="text-sm text-gray-600 mt-1">{factor.description}</p>
+                <div className="flex items-start gap-3 flex-1">
+                  <div className={`rounded-lg p-2 ${factor.impact === 'positive' ? 'bg-green-100 text-green-600' : factor.impact === 'negative' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {factor.icon}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900">{factor.label}</p>
+                      {factor.rating && <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ratingCls}`}>{factor.rating}</span>}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{factor.desc}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <div className="text-right">
-                    <p
-                      className={`text-lg font-bold ${
-                        factor.impact === 'positive'
-                          ? 'text-green-600'
-                          : factor.impact === 'negative'
-                          ? 'text-red-600'
-                          : 'text-gray-600'
-                      }`}
-                    >
-                      {factor.score.toFixed(1)}
+                    <p className={`text-2xl font-bold ${scoreColor}`}>
+                      {factor.score ?? '—'}
+                      <span className="text-xs font-normal text-gray-500">/100</span>
                     </p>
-                    <p className="text-xs text-gray-500">Impact Score</p>
+                    <p className="text-[10px] text-gray-400 uppercase">Weight: {factor.weight}</p>
                   </div>
-                  <motion.div animate={{ rotate: expandedId === index ? 180 : 0 }}>
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                  </motion.div>
+                  {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                 </div>
               </div>
 
-              {/* Expanded Details */}
-              {expandedId === index && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 pt-4 border-t border-gray-200"
-                >
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <p className="text-xs text-blue-700 font-semibold">Model Weight</p>
-                      <p className="text-sm text-blue-900 mt-1">
-                        {factor.impact === 'positive' ? '12-15%' : '5-8%'} of final score
-                      </p>
+              {/* Expanded: AI Explanation */}
+              {isExpanded && (
+                <div className="mt-4 pt-4 border-t border-gray-200" onClick={e => e.stopPropagation()}>
+                  {factor.explanation ? (
+                    <div className="flex gap-2 items-start">
+                      <Brain className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold text-purple-800 mb-1">AI Reasoning</p>
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{factor.explanation}</p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-indigo-50 rounded-lg">
-                      <p className="text-xs text-indigo-700 font-semibold">Confidence</p>
-                      <p className="text-sm text-indigo-900 mt-1">
-                        {(85 + Math.random() * 15).toFixed(0)}% certainty
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-4">
-                    This factor was derived from financial analysis of the company's balance sheet
-                    and operating statements, compared against industry benchmarks and historical
-                    performance patterns.
-                  </p>
-                </motion.div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No detailed explanation available. Generate a CAM to see AI reasoning.</p>
+                  )}
+                </div>
               )}
             </Card>
-          </motion.div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Model Information */}
       <Card className="p-6 bg-gray-50 border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">Model Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-gray-600">Model Version</p>
-            <p className="font-medium text-gray-900">IntelliCredit v2.1</p>
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Cpu className="w-5 h-5 text-gray-600" />
+          Intelligence Stack
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+            <Sparkles className="h-5 w-5 text-blue-500" />
+            <div>
+              <p className="text-gray-600 text-xs">Reconciler Model</p>
+              <p className="font-medium text-gray-900">Gemini 2.5 Flash (1M ctx)</p>
+            </div>
           </div>
-          <div>
-            <p className="text-gray-600">Model Type</p>
-            <p className="font-medium text-gray-900">Gradient Boosting Ensemble</p>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+            <Layers className="h-5 w-5 text-purple-500" />
+            <div>
+              <p className="text-gray-600 text-xs">Agent Framework</p>
+              <p className="font-medium text-gray-900">LangGraph + 5 Parallel Agents</p>
+            </div>
           </div>
-          <div>
-            <p className="text-gray-600">Training Data</p>
-            <p className="font-medium text-gray-900">50K+ applications (2018-2024)</p>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+            <Brain className="h-5 w-5 text-green-500" />
+            <div>
+              <p className="text-gray-600 text-xs">Memory Layer</p>
+              <p className="font-medium text-gray-900">mem0 Cloud (Promoter DNA)</p>
+            </div>
           </div>
-          <div>
-            <p className="text-gray-600">Last Updated</p>
-            <p className="font-medium text-gray-900">March 2024</p>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+            <Shield className="h-5 w-5 text-amber-500" />
+            <div>
+              <p className="text-gray-600 text-xs">Reasoning</p>
+              <p className="font-medium text-gray-900">Chain-of-Thought + Contrastive</p>
+            </div>
           </div>
         </div>
       </Card>

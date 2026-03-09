@@ -16,6 +16,7 @@ import { eq } from 'drizzle-orm';
 import { redis, redisKeys } from '@/lib/redis';
 import { runDiscrepancyEngine } from '@/lib/pipeline/discrepancy-engine';
 import { publishPipelineEvent } from '@/lib/agents/base-agent';
+import { searchPromoterHistory, storePromoterDNA, isMem0Available } from '@/lib/mem0/promoter-dna';
 import type { FiveCsScores, LoanRecommendation, DiscrepancyResult } from '@/lib/types';
 
 // ─── Gemini client ──────────────────────────────────────────────────────────
@@ -52,6 +53,9 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
       industry: applications.industry,
       requestedAmountInr: applications.requestedAmountInr,
       companyId: applications.companyId,
+      promoterDin: applications.promoterDin,
+      pan: applications.pan,
+      cmrRank: applications.cmrRank,
     })
     .from(applications)
     .innerJoin(companies, eq(applications.companyId, companies.id))
@@ -101,6 +105,19 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
 
   const fraudSignals = findings.filter((f) => f.isFraudSignal === true);
 
+  // ── 4b. mem0 Promoter DNA — fetch prior history ─────────────────────────────
+  let promoterHistoryBlock = '';
+  const din = app.promoterDin;
+  if (din && isMem0Available()) {
+    await publishPipelineEvent(appId, 'reconciler', 'processing', { message: 'Searching mem0 for promoter history...' });
+    const memories = await searchPromoterHistory(din);
+    if (memories.length > 0) {
+      promoterHistoryBlock = memories
+        .map((m) => `  - ${typeof m.memory === 'string' ? m.memory : JSON.stringify(m)}`)
+        .join('\n');
+    }
+  }
+
   // ── 5. Run discrepancy engine ────────────────────────────────────────────────
   const discrepancies = await runDiscrepancyEngine(appId);
   const redFlags = discrepancies.filter((d) => d.verdict === 'RED_FLAG');
@@ -119,6 +136,7 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
     discrepancies,
     redFlags,
     flags,
+    promoterHistoryBlock,
   });
 
   await publishPipelineEvent(appId, 'reconciler', 'processing', { message: 'Calling Gemini 2.5 Flash for reconciliation...' });
@@ -183,6 +201,28 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
 
   await publishPipelineEvent(appId, 'reconciler', 'done', { decision: rec.decision });
 
+  // ── 11. mem0 — Store promoter DNA ────────────────────────────────────────────
+  if (din && isMem0Available()) {
+    storePromoterDNA({
+      din,
+      companyName: app.companyName ?? 'Unknown',
+      applicationId: appId,
+      decision: rec.decision,
+      fiveCsSummary: {
+        character: { score: safeScore(fcs.character?.score), rating: fcs.character?.rating ?? 'N/A' },
+        capacity: { score: safeScore(fcs.capacity?.score), rating: fcs.capacity?.rating ?? 'N/A' },
+        capital: { score: safeScore(fcs.capital?.score), rating: fcs.capital?.rating ?? 'N/A' },
+        collateral: { score: safeScore(fcs.collateral?.score), rating: fcs.collateral?.rating ?? 'N/A' },
+        conditions: { score: safeScore(fcs.conditions?.score), rating: fcs.conditions?.rating ?? 'N/A' },
+      },
+      fraudSignals: fraudSignals.map((f) => f.snippet),
+      qualitativeNotes: notes.map((n) => `${n.category}: ${n.noteText}`),
+      recommendedAmount: rec.recommendedAmountInr,
+      cmrRank: app.cmrRank ?? undefined,
+      date: new Date().toISOString().split('T')[0],
+    }).catch((err) => console.error('[mem0] Background store failed:', err));
+  }
+
   return { ...result, thinkingTrace, discrepancies };
 }
 
@@ -199,6 +239,7 @@ interface PromptContext {
   discrepancies: DiscrepancyResult[];
   redFlags: DiscrepancyResult[];
   flags: DiscrepancyResult[];
+  promoterHistoryBlock: string;
 }
 
 function buildReconcilerPrompt(ctx: PromptContext): string {
@@ -249,6 +290,9 @@ ${fraudBlock}
 
 ## OTHER RESEARCH FINDINGS
 ${researchBlock}
+
+## PROMOTER HISTORY (from mem0 Promoter DNA)
+${ctx.promoterHistoryBlock || '  (first application — no prior history found)'}
 
 ## INSTRUCTIONS
 Think step by step inside <think>...</think> tags. Weigh each signal and note carefully. Consider:

@@ -11,7 +11,7 @@ To build a high-fidelity Agentic Credit Decisioning Engine that bridges the "Int
 | II. Ingest | Smart PDF detection routes to Gemini native (digital) or Mistral OCR (scanned); Redis tracks state. | Adaptive Ingestor |
 | III. Analyze | Parallel agents perform Financial Analysis, Discrepancy Detection & Secondary Research. | LangGraph + Gemini 2.5 Flash |
 | IV. Qualify | Credit Officer adds qualitative field notes (factory visits, management interview observations). | Qualitative Input Portal |
-| V. Reconcile | DeepSeek-R1 (via Groq) reasons over all signals with visible chain-of-thought. | Groq + DeepSeek-R1-Distill |
+| V. Reconcile | Gemini 2.5 Flash reasons over all signals with structured chain-of-thought. | Google AI + LangGraph |
 | VI. Output | Credit Officer reviews multi-tabbed CAM with citations and thinking trace, then downloads PDF. | Admin Dashboard |
 
 ---
@@ -24,10 +24,11 @@ To build a high-fidelity Agentic Credit Decisioning Engine that bridges the "Int
 | The Ingestor (Digital) | gemini-2.5-flash | Native PDF bytes | Digital-born PDFs passed directly — skips OCR, saves 3–5s per document. |
 | The Accountant | gemini-2.5-flash | Custom TS logic | Indian line items; GSTR-3B vs GSTR-2A match; Bank credit analysis; CMR score. |
 | The Scout | gemini-2.5-flash | Tavily site: operators + Apify fallback | e-Courts, MCA, RBI circulars, rating agencies, BSE/NSE shareholding. |
-| The Reconciler | deepseek-r1-distill-llama-70b | Groq API + LangGraph | Fast (~800 tok/s) chain-of-thought fraud detection and 5Cs synthesis. |
-| The Memory | mem0 + Redis | Upstash Redis | Promoter DNA across applications (mem0) + live pipeline state (Redis Blackboard). |
+| The Reconciler | gemini-2.5-flash | Google Generative AI SDK | Deep chain-of-thought fraud detection and 5Cs synthesis with 1M token context. |
+| The Memory | mem0 Cloud + Redis | Upstash Redis + mem0ai SDK | Promoter DNA across applications (mem0) + live pipeline state (Redis Blackboard). |
+| The Conversationalist | gemini-2.5-flash | Google Generative AI SDK | Interactive AI chat — Credit Officers can ask questions about any applicant in real time. |
 
-> **Model Philosophy:** Gemini 2.5 Flash handles 80% of tasks (multimodal, 1M token context, free tier). DeepSeek-R1-Distill on Groq is reserved for final reconciliation — same reasoning quality as full R1, ~26x faster at 800 tokens/sec, free tier at 6K tokens/min.
+> **Model Philosophy:** Gemini 2.5 Flash handles all inference tasks end-to-end — extraction, analysis, reconciliation, and chat. Its 1M token context window and native multimodal support make it uniquely suited: an entire 200-page Annual Report, all agent signals, and the full prompt fit in one call. Groq provides fast inference for the 5 parallel analysis agents via Llama models.
 
 ---
 
@@ -199,8 +200,11 @@ Confidence ≥ 0.75 + discrepancy > threshold → `FRAUD_CHECK` appended to `res
 
 ## Step 5: The Explainable Synthesis & CAM Generation
 
-### DeepSeek-R1 Thinking Chain — Visible to Judges
-DeepSeek-R1 (via Groq) produces `<think>...</think>` tokens before its answer. We **capture and surface** this reasoning chain in the UI as a collapsible **"View AI Reasoning"** panel. This is the single most powerful explainability feature: judges can literally read the model thinking through contradictions, weighing evidence, and arriving at a conclusion. No other system in the room will be able to show this.
+### AI Thinking Chain — Visible to Judges
+Gemini 2.5 Flash produces structured reasoning before its answer — we prompt it to wrap reasoning in `<think>...</think>` blocks. We **capture and surface** this reasoning chain in the UI as a collapsible **"View AI Reasoning"** panel. This is the single most powerful explainability feature: judges can literally read the model thinking through contradictions, weighing evidence, and arriving at a conclusion. No other system in the room will be able to show this.
+
+### Interactive AI Chat — Ask Anything About the Applicant
+Credit Officers can open a chat panel and ask natural language questions about any applicant: "Why was the capacity score low?", "What litigation risk was found?", "Compare the GST vs bank statement discrepancy." The chat is powered by Gemini 2.5 Flash with the full context of all agent results, research findings, and qualitative notes — providing instant, cited answers without leaving the dashboard.
 
 ### 5Cs Scoring Output
 Each C scores 0–100, rated Strong / Adequate / Weak / Red Flag, with contrastive explanation and citations:
@@ -244,7 +248,7 @@ Each C scores 0–100, rated Strong / Adequate / Weak / Red Flag, with contrasti
 - Research findings: e-Courts cases, MCA status, CRISIL rating, RBI circulars, news
 - Shareholding pattern summary
 - Credit Officer notes (clearly labeled, per category)
-- AI Reasoning trace (DeepSeek-R1 thinking chain summary)
+- AI Reasoning trace (Gemini thinking chain summary)
 - Full audit trail: agent name, data source, timestamp, confidence per data point
 
 ---
@@ -259,17 +263,24 @@ Each C scores 0–100, rated Strong / Adequate / Weak / Red Flag, with contrasti
 | Primary Database | Neon (Postgres) | Applications, metrics, signals, qualitative notes, decisions, audit trail |
 | Vector Search | pgvector (on Neon) | CAM benchmarking against historical cases; no separate vector DB needed |
 | Workflow Engine | LangGraph | Cyclic orchestration: parallel extraction, conditional re-dispatch, qualitative gate |
-| Inference (fast) | Groq API | DeepSeek-R1-Distill-Llama-70B at ~800 tok/s — synthesis in <15s |
+| Inference (Reconciler) | Google Generative AI | Gemini 2.5 Flash — 1M token context, structured chain-of-thought synthesis |
+| Inference (Analysis) | Groq API | Llama 3.3 70B at ~800 tok/s — 5 parallel agents in <15s |
 
 ### Redis Blackboard Architecture
 Each agent writes to a Redis hash keyed by `app_id`. Frontend polls via SSE for live progress. Reconciler reads all keys atomically before synthesis. If any agent fails, its key is absent — Reconciler marks that dimension "Unverified" rather than crashing.
 
 ### mem0 Promoter DNA
-Persistent entity profiles keyed by PAN / DIN. When a new application arrives with a known promoter, mem0 surfaces:
-- All prior applications and outcomes
-- Historical fraud signals or litigation matches
-- Prior CMR scores and trajectory
+Persistent entity profiles keyed by PAN / DIN via mem0 Cloud. When a new application arrives with a known promoter, mem0 surfaces:
+- All prior applications and outcomes (approve/reject/conditional with reasoning)
+- Historical fraud signals or litigation matches across past analyses
+- Prior CMR scores and trajectory over time
 - Board and company restructuring history
+- Any red flags from previous Credit Officer notes
+
+**Integration points:**
+1. **On CAM generation** — After reconciliation completes, all key findings (5Cs scores, decision, fraud signals, qualitative notes) are stored as memories keyed by the promoter's DIN
+2. **On new application** — Before pipeline starts, mem0 is searched for the promoter's DIN. Any prior history is injected into the reconciler prompt as "Promoter History" context
+3. **In the dashboard** — A "Promoter History" section shows all prior interactions with this promoter across applications
 
 ---
 
@@ -285,7 +296,7 @@ Persistent entity profiles keyed by PAN / DIN. When a new application arrives wi
         → join → Redis Blackboard populated
 [Qualitative Input Gate] (Credit Officer fills form)
     →
-[Reconciler Node] (DeepSeek-R1 via Groq)
+[Reconciler Node] (Gemini 2.5 Flash via Google AI)
     → <think> chain captured →
     → conditional:
         missing_critical_data → back to [Scout Agent]
@@ -304,7 +315,8 @@ Persistent entity profiles keyed by PAN / DIN. When a new application arrives wi
 | Hover tooltip | Raw OCR snippet or scraped text that produced the value |
 | Monthly bar chart | GST declared vs Bank credits, 12-month side-by-side — discrepancy visible instantly |
 | 5Cs radar chart | Visual score overview alongside contrastive text |
-| AI Reasoning panel | Collapsible `<think>` chain from DeepSeek-R1 — judges can read every step |
+| AI Reasoning panel | Collapsible `<think>` chain from Gemini 2.5 Flash — judges can read every step |
+| AI Chat panel | Interactive Q&A — Credit Officers ask "Why was this score low?" and get cited answers |
 | Discrepancy table | All 7 checks with threshold, actual value, verdict |
 
 ---
@@ -315,7 +327,7 @@ Persistent entity profiles keyed by PAN / DIN. When a new application arrives wi
 |------|------|------|
 | **Extraction Accuracy** | **9/10** | Adaptive routing (Gemini native for digital, Mistral OCR for scanned). LlamaParse JSON mode for tables. Separate agents per document type with Indian-specific prompts. |
 | **Research Depth** | **9/10** | 6 parallel Tavily searches covering e-Courts, MCA (DIN-based), RBI circulars, CRISIL/ICRA/CARE ratings, BSE/NSE shareholding, news. Apify as enrichment. No single point of API failure. |
-| **Explainability** | **10/10** | Source chip + confidence badge + hover tooltip on every number. Monthly discrepancy chart. 5Cs radar chart. DeepSeek-R1 thinking chain surfaced in collapsible UI panel. Every qualitative note cited by category. |
+| **Explainability** | **10/10** | Source chip + confidence badge + hover tooltip on every number. Monthly discrepancy chart. 5Cs radar chart. Gemini thinking chain surfaced in collapsible UI panel. Interactive AI chat for real-time Q&A about any applicant. Every qualitative note cited by category. mem0 Promoter DNA surfaces cross-application history automatically. |
 | **Indian Context Sensitivity** | **10/10** | CIBIL CMR 1–10 rank (not consumer 300–900). GSTR-3B vs GSTR-2A mismatch engine. DIN-based director lookup. Section 8 shell company detection. RBI circular search. CRISIL/ICRA rating pulls. Nil-filer GST suppression pattern. Indian line items (Sundry Debtors, CWIP, Directors' Loans). |
 
 ---
