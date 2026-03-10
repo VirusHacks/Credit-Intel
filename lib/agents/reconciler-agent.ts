@@ -18,6 +18,7 @@ import { runDiscrepancyEngine } from '@/lib/pipeline/discrepancy-engine';
 import { publishPipelineEvent } from '@/lib/agents/base-agent';
 import { searchPromoterHistory, storePromoterDNA, isMem0Available } from '@/lib/mem0/promoter-dna';
 import type { FiveCsScores, LoanRecommendation, DiscrepancyResult } from '@/lib/types';
+import { runBayesianScorer, type BayesianDecision } from '@/lib/scoring/bayesian-scorer';
 
 // ─── Gemini client ──────────────────────────────────────────────────────────
 let _genai: GoogleGenerativeAI | null = null;
@@ -38,6 +39,7 @@ export interface ReconcilerOutput {
   recommendation: LoanRecommendation;
   thinkingTrace: string;
   discrepancies: DiscrepancyResult[];
+  bayesianDecision: BayesianDecision;
 }
 
 // ─── Main entry point ──────────────────────────────────────────────────────────
@@ -163,6 +165,22 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
     return isNaN(n) ? 50 : Math.max(0, Math.min(100, n));
   };
 
+  // ── 9a. Run Bayesian Evidence Accumulation scorer ───────────────────────────
+  const bayesianDecision = runBayesianScorer({
+    fiveCsScores: {
+      character:  { score: safeScore(fcs.character?.score),  rating: fcs.character?.rating  ?? 'N/A', explanation: fcs.character?.explanation },
+      capacity:   { score: safeScore(fcs.capacity?.score),   rating: fcs.capacity?.rating   ?? 'N/A', explanation: fcs.capacity?.explanation },
+      capital:    { score: safeScore(fcs.capital?.score),    rating: fcs.capital?.rating    ?? 'N/A', explanation: fcs.capital?.explanation },
+      collateral: { score: safeScore(fcs.collateral?.score), rating: fcs.collateral?.rating ?? 'N/A', explanation: fcs.collateral?.explanation },
+      conditions: { score: safeScore(fcs.conditions?.score), rating: fcs.conditions?.rating ?? 'N/A', explanation: fcs.conditions?.explanation },
+    },
+    discrepancies: discrepancies.map((d) => ({ checkName: d.checkName, verdict: d.verdict, confidence: d.confidence, actualValue: d.actualValue })),
+    qualitativeNotes: notes.map((n) => ({ fiveCDimension: n.fiveCDimension, scoreDelta: n.scoreDelta, noteText: n.noteText })),
+    researchFindings: findings.map((f) => ({ isFraudSignal: f.isFraudSignal, relevanceScore: f.relevanceScore, snippet: f.snippet, searchType: f.searchType })),
+    cmrRank: app.cmrRank,
+    requestedAmountInr: app.requestedAmountInr,
+  });
+
   await db.insert(camOutputs).values({
     applicationId: appId,
     // 5C scores
@@ -191,6 +209,8 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
     conditions: rec.conditions,
     // AI trace
     thinkingTrace,
+    // Bayesian Decision Engine
+    bayesianJson: bayesianDecision as unknown as Record<string, unknown>,
   });
 
   // ── 10. Update application pipeline status ──────────────────────────────────
@@ -223,7 +243,7 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
     }).catch((err) => console.error('[mem0] Background store failed:', err));
   }
 
-  return { ...result, thinkingTrace, discrepancies };
+  return { ...result, thinkingTrace, discrepancies, bayesianDecision };
 }
 
 // ─── Prompt builder ────────────────────────────────────────────────────────────

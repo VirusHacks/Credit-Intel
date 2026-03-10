@@ -80,6 +80,7 @@ export async function GET(
       reductionRationale: camOutputs.reductionRationale,
       conditions: camOutputs.conditions,
       thinkingTrace: camOutputs.thinkingTrace,
+      bayesianJson: camOutputs.bayesianJson,
       pdfBlobUrl: camOutputs.pdfBlobUrl,
       generatedAt: camOutputs.generatedAt,
     })

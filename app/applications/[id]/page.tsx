@@ -6,6 +6,8 @@ import { MainNav } from '@/components/layout/main-nav';
 import { AgentActivityFeed } from '@/components/agent/agent-activity-feed';
 import { AnalysisDashboard } from '@/components/analysis/analysis-dashboard';
 import { CamOutputPanel } from '@/components/memo/cam-output-panel';
+import { BayesianDecisionPanel } from '@/components/memo/bayesian-decision-panel';
+import type { BayesianDecision } from '@/lib/scoring/bayesian-scorer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -73,6 +75,7 @@ interface AppDetail {
     reductionRationale: string | null;
     conditions: string[] | null;
     thinkingTrace: string | null;
+    bayesianJson: BayesianDecision | null;
     pdfBlobUrl: string | null;
     generatedAt: string;
   } | null;
@@ -227,6 +230,26 @@ export default function ApplicationDetailPage() {
     }
   };
 
+  const handleGenerateDecision = async () => {
+    setActionLoading('decision');
+    try {
+      const res = await fetch('/api/cam/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? 'Decision analysis generation failed');
+      }
+      await fetchApp();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Generation failed');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleSkipQualify = async () => {
     setActionLoading('skip');
     try {
@@ -280,6 +303,7 @@ export default function ApplicationDetailPage() {
     { id: 'analysis', label: 'Analysis Dashboard' },
     { id: 'info', label: 'Application Info' },
     { id: 'cam', label: 'CAM Output' },
+    { id: 'decision', label: 'Decision Logic' },
     { id: 'pipeline', label: 'AI Pipeline' },
   ];
 
@@ -482,6 +506,61 @@ export default function ApplicationDetailPage() {
               <p className="text-sm text-muted-foreground">
                 Complete the AI pipeline and field qualification to enable CAM generation.
               </p>
+            </Card>
+          )
+        )}
+
+        {/* Tab: Decision Logic */}
+        {activeTab === 'decision' && (
+          app.latestCam?.bayesianJson ? (
+            <div className="rounded-xl border bg-white shadow-sm p-6">
+              <BayesianDecisionPanel data={app.latestCam.bayesianJson} />
+            </div>
+          ) : (
+            <Card className="p-16 text-center space-y-5">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mx-auto">
+                <FileBarChart2 className="h-8 w-8 text-blue-500" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">No decision analysis yet</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                  Run the Bayesian evidence engine to get posterior credit scores, rate decomposition,
+                  and adversarial bull/bear analysis.
+                </p>
+              </div>
+              {app.pipelineStatus === 'complete' ? (
+                <Button
+                  onClick={handleGenerateDecision}
+                  disabled={actionLoading === 'decision'}
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                >
+                  {actionLoading === 'decision' ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
+                  ) : (
+                    <><Play className="h-4 w-4" /> Generate Decision Analysis</>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 inline-block">
+                    Complete the AI Pipeline first to enable decision analysis
+                  </p>
+                  <div>
+                    <Button
+                      onClick={handleRunPipeline}
+                      disabled={!!actionLoading || ['analyzing', 'reconciling', 'generating_cam', 'ingesting'].includes(app.pipelineStatus)}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      {actionLoading === 'pipeline' ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Starting Pipeline…</>
+                      ) : (
+                        <><Play className="h-4 w-4" /> Run AI Pipeline First</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
           )
         )}
