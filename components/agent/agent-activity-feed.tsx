@@ -92,16 +92,53 @@ function StageIcon({ stage }: { stage: string }) {
 interface AgentActivityFeedProps {
   /** Real application UUID; if omitted, shows demo/static data */
   appId?: string;
+  /**
+   * Current pipeline status from the parent page.
+   * When 'complete', we skip live SSE and show all stages as completed.
+   */
+  pipelineStatus?: string;
 }
 
-export function AgentActivityFeed({ appId }: AgentActivityFeedProps) {
+export function AgentActivityFeed({ appId, pipelineStatus }: AgentActivityFeedProps) {
   const [events, setEvents] = useState<Map<string, PipelineEvent>>(new Map());
   const [thinkStream, setThinkStream] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const esRef = useRef<EventSource | null>(null);
 
+  // When already complete, do a single non-streaming fetch of cached stages
+  // and skip the SSE connection entirely.
+  const isAlreadyComplete = pipelineStatus === 'complete';
+
+  // One-time snapshot fetch when pipeline is already done.
+  // The SSE endpoint sends cached stages + closes immediately in this case,
+  // so we parse the event-stream response to populate the events map.
   useEffect(() => {
-    if (!appId) return;
+    if (!appId || !isAlreadyComplete) return;
+    let cancelled = false;
+    fetch(`/api/pipeline/status/${appId}`)
+      .then(async (res) => {
+        if (!res.body || cancelled) return;
+        const text = await res.text();
+        // Parse SSE lines: "data: {...}\n"
+        const lines = text.split('\n');
+        const nextMap = new Map<string, PipelineEvent>();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const ev = JSON.parse(line.slice(6)) as PipelineEvent;
+            if (ev.stage && ev.stage !== 'init' && ev.stage !== 'end' && ev.stage !== 'signals') {
+              nextMap.set(ev.stage, ev);
+            }
+          } catch { /* ignore */ }
+        }
+        if (!cancelled && nextMap.size > 0) setEvents(nextMap);
+      })
+      .catch(() => { /* non-fatal */ });
+    return () => { cancelled = true; };
+  }, [appId, isAlreadyComplete]);
+
+  useEffect(() => {
+    if (!appId || isAlreadyComplete) return;
 
     let currentEs: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -168,6 +205,18 @@ export function AgentActivityFeed({ appId }: AgentActivityFeedProps) {
   const activities: ActivityItem[] = STAGE_ORDER.map((stage) => {
     const ev = events.get(stage);
     if (!ev) {
+      // If the whole pipeline is complete, any stage we don't have cached
+      // data for must have also finished successfully.
+      if (isAlreadyComplete) {
+        return {
+          id: stage,
+          stage,
+          status: 'completed' as const,
+          confidence: 0,
+          message: 'done',
+          timestamp: '',
+        };
+      }
       return {
         id: stage,
         stage,
@@ -177,13 +226,21 @@ export function AgentActivityFeed({ appId }: AgentActivityFeedProps) {
         timestamp: '',
       };
     }
+    const derivedStatus =
+      ev.status === 'done'
+        ? ('completed' as const)
+        : ev.status === 'failed'
+          ? ('failed' as const)
+          : isAlreadyComplete
+            ? ('completed' as const) // pipeline done → treat in-progress as completed
+            : ('in-progress' as const);
     return {
       id: stage,
       stage,
-      status: ev.status === 'done' ? 'completed' : ev.status === 'failed' ? 'failed' : 'in-progress',
+      status: derivedStatus,
       confidence: ev.confidence ?? 0,
       message: ev.message ?? ev.status,
-      timestamp: new Date(ev.ts).toLocaleTimeString(),
+      timestamp: ev.ts ? new Date(ev.ts).toLocaleTimeString() : '',
     };
   });
 
@@ -198,10 +255,15 @@ export function AgentActivityFeed({ appId }: AgentActivityFeedProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold text-gray-900">AI Agent Pipeline</h3>
-            {isConnected && (
+            {isConnected && !isAlreadyComplete && (
               <span className="flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-500 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
+              </span>
+            )}
+            {isAlreadyComplete && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                <CheckCircle2 className="h-3 w-3" /> All stages complete
               </span>
             )}
           </div>

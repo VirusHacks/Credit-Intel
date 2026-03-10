@@ -457,7 +457,7 @@ export default function ApplicationDetailPage() {
         </div>
 
         {/* Tab: AI Pipeline */}
-        {activeTab === 'pipeline' && <AgentActivityFeed appId={appId} />}
+        {activeTab === 'pipeline' && <AgentActivityFeed appId={appId} pipelineStatus={app.pipelineStatus} />}
 
         {/* Tab: Analysis Dashboard */}
         {activeTab === 'analysis' && <AnalysisDashboard appId={appId} />}

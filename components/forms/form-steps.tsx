@@ -1,6 +1,41 @@
 'use client';
 
+import { Wand2 } from 'lucide-react';
 import { DocumentUploader, type UploadedDocResult } from './document-uploader';
+
+// ─── Sample data (Indian corporate) — for quick test fills ───────────────────
+const SAMPLE_COMPANY = {
+  companyName: 'Rajdhani Steel Industries Pvt. Ltd.',
+  registrationNumber: 'U27100MH2012PTC230456',
+  registrationType: 'LLC',
+  foundedYear: '2012',
+  address: '14, MIDC Industrial Area, Phase II',
+  city: 'Pune',
+  state: 'Maharashtra',
+  zipCode: '411019',
+  phoneNumber: '+91 20 2710 4400',
+  email: 'info@rajdhanisteel.in',
+  website: 'https://www.rajdhanisteel.in',
+  location: 'Pune, Maharashtra',
+};
+
+const SAMPLE_BUSINESS = {
+  industry: 'Manufacturing',
+  numberOfEmployees: '340',
+  annualRevenue: '85000000',
+  businessStage: 'Growth',
+  yearlyGrowth: '18',
+  mainProducts:
+    'Hot-rolled and cold-rolled steel coils, TMT bars, and structural steel sections supplied to construction, auto-ancillary, and infrastructure clients across western India.',
+};
+
+const SAMPLE_BANKING = {
+  bankName: 'HDFC Bank',
+  accountNumber: '50200012345678',
+  accountType: 'Business Checking',
+  yearsWithBank: '8',
+  requestedAmount: '5000000',
+};
 
 interface FormData {
   companyName: string;
@@ -37,11 +72,21 @@ interface StepProps {
 export function StepCompany({ formData, updateFormData }: StepProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Company Information</h2>
-        <p className="mt-1 text-muted-foreground">
-          Please provide details about your company
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Company Information</h2>
+          <p className="mt-1 text-muted-foreground">
+            Please provide details about your company
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => updateFormData(SAMPLE_COMPANY)}
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-dashed border-violet-400 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
+        >
+          <Wand2 className="h-3.5 w-3.5" />
+          Fill Sample Details
+        </button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -190,11 +235,21 @@ export function StepCompany({ formData, updateFormData }: StepProps) {
 export function StepBusiness({ formData, updateFormData }: StepProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Business Details</h2>
-        <p className="mt-1 text-muted-foreground">
-          Tell us about your business and operations
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Business Details</h2>
+          <p className="mt-1 text-muted-foreground">
+            Tell us about your business and operations
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => updateFormData(SAMPLE_BUSINESS)}
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-dashed border-violet-400 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
+        >
+          <Wand2 className="h-3.5 w-3.5" />
+          Fill Sample Details
+        </button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -322,11 +377,21 @@ export function StepDocuments({ formData, updateFormData }: StepProps) {
 export function StepBanking({ formData, updateFormData }: StepProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Banking Information</h2>
-        <p className="mt-1 text-muted-foreground">
-          Provide your banking details for verification
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Banking Information</h2>
+          <p className="mt-1 text-muted-foreground">
+            Provide your banking details for verification
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => updateFormData(SAMPLE_BANKING)}
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-dashed border-violet-400 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
+        >
+          <Wand2 className="h-3.5 w-3.5" />
+          Fill Sample Details
+        </button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
