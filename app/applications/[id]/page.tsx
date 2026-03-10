@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { MainNav } from '@/components/layout/main-nav';
 import { AgentActivityFeed } from '@/components/agent/agent-activity-feed';
 import { AnalysisDashboard } from '@/components/analysis/analysis-dashboard';
+import { CamOutputPanel } from '@/components/memo/cam-output-panel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -12,25 +13,13 @@ import {
   Play,
   FileCheck2,
   FileBarChart2,
-  Download,
   RefreshCw,
+  Clock,
+  Loader2,
+  Download,
   AlertTriangle,
   CheckCircle2,
-  Clock,
   XCircle,
-  Loader2,
-  ChevronDown,
-  ChevronUp,
-  MessageSquare,
-  Send,
-  Brain,
-  Shield,
-  TrendingUp,
-  Landmark,
-  Building2,
-  BarChart3,
-  ClipboardList,
-  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -172,13 +161,8 @@ export default function ApplicationDetailPage() {
   const [app, setApp] = useState<AppDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('pipeline');
+  const [activeTab, setActiveTab] = useState('analysis');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
-  const [showThinking, setShowThinking] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
 
   const fetchApp = useCallback(async () => {
     try {
@@ -256,28 +240,6 @@ export default function ApplicationDetailPage() {
     }
   };
 
-  const handleChatSend = async () => {
-    const msg = chatInput.trim();
-    if (!msg || chatLoading) return;
-    setChatInput('');
-    const updated = [...chatMessages, { role: 'user' as const, content: msg }];
-    setChatMessages(updated);
-    setChatLoading(true);
-    try {
-      const res = await fetch(`/api/applications/${appId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history: updated.slice(-10) }),
-      });
-      if (!res.ok) throw new Error('Chat failed');
-      const data = await res.json() as { reply: string };
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
-    } catch {
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Sorry, I could not process your question. Please try again.' }]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -315,10 +277,10 @@ export default function ApplicationDetailPage() {
   const showCAMButton = app.qualitativeGateDone && !['complete', 'reconciling', 'generating_cam'].includes(app.pipelineStatus);
 
   const tabs = [
-    { id: 'pipeline', label: 'AI Pipeline' },
     { id: 'analysis', label: 'Analysis Dashboard' },
     { id: 'info', label: 'Application Info' },
     { id: 'cam', label: 'CAM Output' },
+    { id: 'pipeline', label: 'AI Pipeline' },
   ];
 
   return (
@@ -414,7 +376,7 @@ export default function ApplicationDetailPage() {
         {/* Field qualify banner */}
         {showQualifyButton && (
           <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
             <div className="flex-1">
               <p className="font-semibold text-amber-800 text-sm">Field qualification required</p>
               <p className="text-xs text-amber-700 mt-0.5">
@@ -508,276 +470,11 @@ export default function ApplicationDetailPage() {
         {/* Tab: CAM Output */}
         {activeTab === 'cam' && (
           app.latestCam ? (
-            <div className="space-y-6">
-
-              {/* ── Decision Summary Card ──────────────────────────────── */}
-              <Card className="overflow-hidden">
-                <div className={`px-6 py-4 ${app.latestCam.decision === 'APPROVE' ? 'bg-gradient-to-r from-green-600 to-green-500' :
-                    app.latestCam.decision === 'CONDITIONAL_APPROVE' ? 'bg-gradient-to-r from-amber-500 to-yellow-500' :
-                      'bg-gradient-to-r from-red-600 to-red-500'
-                  } text-white`}>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      {app.latestCam.decision === 'APPROVE' ? <CheckCircle2 className="h-8 w-8" /> :
-                        app.latestCam.decision === 'CONDITIONAL_APPROVE' ? <AlertTriangle className="h-8 w-8" /> :
-                          <XCircle className="h-8 w-8" />}
-                      <div>
-                        <p className="text-sm font-medium opacity-90">Credit Decision</p>
-                        <p className="text-2xl font-bold">{app.latestCam.decision.replace('_', ' ')}</p>
-                      </div>
-                    </div>
-                    <a href={`/api/cam/download/${app.id}`} target="_blank" rel="noreferrer">
-                      <Button variant="secondary" className="gap-2 bg-white/20 hover:bg-white/30 text-white border-0">
-                        <Download className="h-4 w-4" />
-                        Download PDF
-                      </Button>
-                    </a>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-100 bg-white">
-                  <div className="p-5 text-center">
-                    <p className="text-xs font-medium text-muted-foreground uppercase">Recommended Amount</p>
-                    <p className="text-xl font-bold mt-1 text-gray-900">
-                      {app.latestCam.recommendedAmountInr && Number(app.latestCam.recommendedAmountInr) > 0
-                        ? `₹${Number(app.latestCam.recommendedAmountInr).toLocaleString('en-IN')}`
-                        : '—'}
-                    </p>
-                  </div>
-                  <div className="p-5 text-center">
-                    <p className="text-xs font-medium text-muted-foreground uppercase">Interest Rate</p>
-                    <p className="text-xl font-bold mt-1 text-gray-900">
-                      {app.latestCam.recommendedRatePercent && Number(app.latestCam.recommendedRatePercent) > 0
-                        ? `${app.latestCam.recommendedRatePercent}%`
-                        : '—'}
-                    </p>
-                  </div>
-                  <div className="p-5 text-center">
-                    <p className="text-xs font-medium text-muted-foreground uppercase">Original Ask</p>
-                    <p className="text-xl font-bold mt-1 text-gray-900">
-                      {app.requestedAmountInr ? `₹${Number(app.requestedAmountInr).toLocaleString('en-IN')}` : '—'}
-                    </p>
-                  </div>
-                  <div className="p-5 text-center">
-                    <p className="text-xs font-medium text-muted-foreground uppercase">Generated</p>
-                    <p className="text-sm font-semibold mt-2 text-gray-700">
-                      {new Date(app.latestCam.generatedAt).toLocaleString('en-IN', {
-                        dateStyle: 'medium', timeStyle: 'short'
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* ── Reduction Rationale ────────────────────────────────── */}
-              {app.latestCam.reductionRationale && (
-                <Card className="p-5 border-l-4 border-l-amber-400 bg-amber-50/50">
-                  <div className="flex gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-amber-800 text-sm">Reduction Rationale</p>
-                      <p className="text-sm text-amber-900 mt-1 leading-relaxed">{app.latestCam.reductionRationale}</p>
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {/* ── Five C's Assessment ────────────────────────────────── */}
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
-                  Five C&apos;s Credit Assessment
-                </h2>
-                <div className="space-y-3">
-                  {([
-                    { key: 'character', icon: <Shield className="h-5 w-5" />, label: 'Character', desc: 'Creditworthiness, reputation & repayment history' },
-                    { key: 'capacity', icon: <TrendingUp className="h-5 w-5" />, label: 'Capacity', desc: 'Ability to repay from cash flows & income' },
-                    { key: 'capital', icon: <Landmark className="h-5 w-5" />, label: 'Capital', desc: 'Net worth, equity & financial reserves' },
-                    { key: 'collateral', icon: <Building2 className="h-5 w-5" />, label: 'Collateral', desc: 'Assets pledged as security' },
-                    { key: 'conditions', icon: <ClipboardList className="h-5 w-5" />, label: 'Conditions', desc: 'Industry, macro & loan purpose factors' },
-                  ] as const).map(({ key, icon, label, desc }) => {
-                    const score = app.latestCam![`${key}Score` as keyof typeof app.latestCam] as number | null;
-                    const rating = app.latestCam![`${key}Rating` as keyof typeof app.latestCam] as string | null;
-                    const explanation = app.latestCam![`${key}Explanation` as keyof typeof app.latestCam] as string | null;
-                    const isExpanded = expandedDimension === key;
-                    const scoreColor = (score ?? 0) >= 70 ? 'text-green-600' : (score ?? 0) >= 50 ? 'text-amber-600' : 'text-red-600';
-                    const barColor = (score ?? 0) >= 70 ? 'bg-green-500' : (score ?? 0) >= 50 ? 'bg-amber-500' : 'bg-red-500';
-
-                    return (
-                      <Card key={key}
-                        className={`overflow-hidden transition-all cursor-pointer hover:shadow-md ${isExpanded ? 'ring-2 ring-blue-200' : ''}`}
-                        onClick={() => setExpandedDimension(isExpanded ? null : key)}>
-                        <div className="p-4 sm:p-5">
-                          <div className="flex items-center gap-4">
-                            <div className={`flex-shrink-0 rounded-lg p-2.5 ${(score ?? 0) >= 70 ? 'bg-green-100 text-green-600' :
-                                (score ?? 0) >= 50 ? 'bg-amber-100 text-amber-600' :
-                                  'bg-red-100 text-red-600'
-                              }`}>
-                              {icon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <div>
-                                  <p className="font-semibold text-gray-900">{label}</p>
-                                  <p className="text-xs text-muted-foreground">{desc}</p>
-                                </div>
-                                <div className="flex items-center gap-3 flex-shrink-0">
-                                  <div className="text-right">
-                                    <p className={`text-2xl font-bold ${scoreColor}`}>{score ?? '—'}<span className="text-sm font-normal text-muted-foreground">/100</span></p>
-                                  </div>
-                                  <RatingBadge rating={rating} />
-                                  {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                                </div>
-                              </div>
-                              <div className="mt-2 h-2 w-full rounded-full bg-gray-100">
-                                <div className={`h-2 rounded-full ${barColor} transition-all duration-700`} style={{ width: `${score ?? 0}%` }} />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Expanded explanation */}
-                          {isExpanded && explanation && (
-                            <div className="mt-4 pt-4 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex gap-2 items-start">
-                                <Brain className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <p className="text-sm font-medium text-blue-800 mb-1">AI Analysis</p>
-                                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{explanation}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          {isExpanded && !explanation && (
-                            <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-muted-foreground italic">
-                              No detailed explanation available for this dimension.
-                            </div>
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ── Loan Conditions ────────────────────────────────────── */}
-              {app.latestCam.conditions && (app.latestCam.conditions as string[]).length > 0 && (
-                <Card className="p-6">
-                  <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <ClipboardList className="h-5 w-5 text-indigo-600" />
-                    Loan Conditions &amp; Covenants
-                  </h2>
-                  <ul className="space-y-2">
-                    {(app.latestCam.conditions as string[]).map((cond, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm">
-                        <span className="flex-shrink-0 mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                        <span className="text-gray-700">{cond}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              )}
-
-              {/* ── AI Thinking Trace (Collapsible) ───────────────────── */}
-              {app.latestCam.thinkingTrace && (
-                <Card className="overflow-hidden">
-                  <button
-                    onClick={() => setShowThinking(!showThinking)}
-                    className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Brain className="h-5 w-5 text-purple-600" />
-                      <span className="text-base font-bold text-gray-900">AI Reasoning Trace</span>
-                      <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-                        {app.latestCam.thinkingTrace.length.toLocaleString()} chars
-                      </span>
-                    </div>
-                    {showThinking ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
-                  </button>
-                  {showThinking && (
-                    <div className="border-t bg-gray-50/70 p-5">
-                      <pre className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed font-sans max-h-[500px] overflow-y-auto">
-                        {app.latestCam.thinkingTrace}
-                      </pre>
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              {/* ── AI Chat / Ask About Applicant ─────────────────────── */}
-              <Card className="overflow-hidden">
-                <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center gap-3">
-                  <div className="rounded-full bg-white/20 p-2">
-                    <MessageSquare className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-bold">Ask AI About This Applicant</p>
-                    <p className="text-xs opacity-80">Ask questions about the credit analysis, risk factors, or financial health</p>
-                  </div>
-                </div>
-
-                {/* Quick question chips */}
-                <div className="px-6 pt-4 flex flex-wrap gap-2">
-                  {[
-                    'Why was this application rejected?',
-                    'What are the biggest risk factors?',
-                    'Summarize the financial health',
-                    'What would improve the credit score?',
-                    'Is the collateral sufficient?',
-                  ].map((q) => (
-                    <button key={q}
-                      onClick={() => { setChatInput(q); }}
-                      className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Chat messages */}
-                <div className="px-6 py-4 space-y-4 max-h-[400px] overflow-y-auto">
-                  {chatMessages.length === 0 && (
-                    <div className="text-center py-8">
-                      <Sparkles className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Ask a question about this application&apos;s credit assessment</p>
-                    </div>
-                  )}
-                  {chatMessages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user'
-                          ? 'bg-blue-600 text-white rounded-br-md'
-                          : 'bg-gray-100 text-gray-800 rounded-bl-md'
-                        }`}>
-                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {chatLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                        <span className="text-sm text-muted-foreground">Thinking…</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Chat input */}
-                <div className="border-t px-4 py-3 flex gap-2 bg-white">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleChatSend(); } }}
-                    placeholder="Ask about this applicant's creditworthiness…"
-                    className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <Button onClick={() => void handleChatSend()} disabled={chatLoading || !chatInput.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 rounded-lg px-4">
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
-
-            </div>
+            <CamOutputPanel
+              cam={app.latestCam}
+              appId={app.id}
+              requestedAmountInr={app.requestedAmountInr}
+            />
           ) : (
             <Card className="p-12 text-center space-y-4">
               <FileBarChart2 className="h-12 w-12 text-gray-300 mx-auto" />
