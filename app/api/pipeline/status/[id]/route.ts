@@ -122,6 +122,21 @@ export async function GET(
             }));
           }
         }
+
+        // ── Short-circuit: pipeline already in a terminal state ──────────────
+        // No need to enter the polling loop — send end event and close.
+        const currentStatus = pipelineState?.status ?? rows[0].pipelineStatus;
+        if (currentStatus === 'complete' || currentStatus === 'failed') {
+          controller.enqueue(sseMsg({
+            appId,
+            stage: 'end',
+            status: currentStatus,
+            message: 'Pipeline reached terminal state',
+          }));
+          controller.close();
+          closed = true;
+          return;
+        }
       } catch {
         // Non-fatal — skip the initial snapshot
       }
