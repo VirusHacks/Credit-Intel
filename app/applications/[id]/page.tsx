@@ -238,6 +238,84 @@ function WorkflowStepper({ status }: { status: string }) {
   );
 }
 
+// ─── SWOT helpers ────────────────────────────────────────────────────────────
+const SOURCE_MAP: Record<string, { label: string; cls: string }> = {
+  bank_statement: { label: 'Bank Statement', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  bank: { label: 'Bank Statement', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  gst_analyzer: { label: 'GST Returns', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+  gst: { label: 'GST Returns', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+  itr_balancesheet: { label: 'ITR / Balance Sheet', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  itr: { label: 'ITR / Balance Sheet', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  balancesheet: { label: 'Balance Sheet', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  cibil_agent: { label: 'CIBIL', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+  cibil_cmr: { label: 'CIBIL', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+  cibil: { label: 'CIBIL', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+  scout: { label: 'Research', cls: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+  reconciler: { label: 'Cross-Validation', cls: 'bg-slate-100 text-slate-600 border-slate-200' },
+  factory_operations: { label: 'Factory Visit', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  management_quality: { label: 'Management', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  customer_relationships: { label: 'Customer Intel', cls: 'bg-orange-50 text-orange-700 border-orange-200' },
+  industry_context: { label: 'Industry', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  collateral_inspection: { label: 'Collateral', cls: 'bg-orange-50 text-orange-700 border-orange-200' },
+  mca_din: { label: 'MCA / DIN', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+  ecourts: { label: 'Court Records', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+  rbi_circular: { label: 'RBI Circular', cls: 'bg-red-50 text-red-700 border-red-200' },
+  rbi: { label: 'RBI Circular', cls: 'bg-red-50 text-red-700 border-red-200' },
+  news_fraud: { label: 'Fraud Signal', cls: 'bg-red-100 text-red-800 border-red-300' },
+};
+
+function resolveSource(raw: string): { label: string; cls: string } {
+  const key = raw.toLowerCase().replace(/[\s\-]/g, '_').replace(/[^a-z0-9_]/g, '');
+  if (SOURCE_MAP[key]) return SOURCE_MAP[key];
+  for (const [k, v] of Object.entries(SOURCE_MAP)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  // Humanise unknown source
+  return { label: raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 20), cls: 'bg-gray-100 text-gray-600 border-gray-200' };
+}
+
+interface ParsedSwotItem { headline: string; detail: string; sources: Array<{ label: string; cls: string }> }
+
+function parseSwotItem(text: string): ParsedSwotItem {
+  const rawSources: string[] = [];
+  const cleaned = text.replace(/\[([^\]]+)\]/g, (_, tag: string) => { rawSources.push(tag.trim()); return ''; }).replace(/\s{2,}/g, ' ').trim();
+  // Deduplicate sources by label
+  const seen = new Set<string>();
+  const sources = rawSources.map(resolveSource).filter((s) => { if (seen.has(s.label)) return false; seen.add(s.label); return true; });
+  // Split at first sentence boundary for headline/detail
+  const breakIdx = cleaned.search(/\.\s+[A-Z]/);
+  const headline = breakIdx > 20 ? cleaned.slice(0, breakIdx + 1).trim() : cleaned;
+  const detail = breakIdx > 20 ? cleaned.slice(breakIdx + 2).trim() : '';
+  return { headline, detail, sources };
+}
+
+function SwotItemRow({ text, index, numCls }: { text: string; index: number; numCls: string }) {
+  const { headline, detail, sources } = parseSwotItem(text);
+  return (
+    <li className="group rounded-xl border border-transparent hover:border-gray-200 hover:bg-white/80 transition-all duration-150 p-3 -mx-1">
+      <div className="flex gap-3">
+        <span className={`shrink-0 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold mt-0.5 ${numCls}`}>
+          {index + 1}
+        </span>
+        <div className="flex-1 min-w-0 space-y-1">
+          <p className="text-sm font-semibold text-gray-900 leading-snug">{headline}</p>
+          {detail && <p className="text-xs text-gray-500 leading-relaxed">{detail}</p>}
+          {sources.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1.5">
+              {sources.map((s, si) => (
+                <span key={si} className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-semibold tracking-tight ${s.cls}`}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-50 shrink-0" />
+                  {s.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function ApplicationDetailPage() {
   const params = useParams();
@@ -637,7 +715,17 @@ export default function ApplicationDetailPage() {
         </div>
 
         {/* Tab: AI Pipeline */}
-        {activeTab === 'pipeline' && <AgentActivityFeed appId={appId} pipelineStatus={app.pipelineStatus} />}
+        {activeTab === 'pipeline' && (
+          <AgentActivityFeed
+            appId={appId}
+            pipelineStatus={app.pipelineStatus}
+            decisionSummary={app.latestCam?.bayesianJson ? {
+              overallScore: app.latestCam.bayesianJson.overallScore,
+              decisionBand: app.latestCam.bayesianJson.decisionBand,
+              conflictCount: app.latestCam.bayesianJson.dimensions.filter((d) => d.conflictFlag).length,
+            } : undefined}
+          />
+        )}
 
         {/* Tab: Analysis Dashboard */}
         {activeTab === 'analysis' && <AnalysisDashboard appId={appId} />}
@@ -730,151 +818,179 @@ export default function ApplicationDetailPage() {
 
             {swot ? (
               <>
-                {/* 2×2 SWOT Grid */}
+                {/* ── Credit Posture Banner ── */}
+                {(() => {
+                  const internalScore = swot.strengths.length - swot.weaknesses.length;
+                  const externalScore = swot.opportunities.length - swot.threats.length;
+                  const internalLabel = internalScore > 1 ? 'Favorable' : internalScore < -1 ? 'Concerning' : 'Mixed';
+                  const externalLabel = externalScore > 1 ? 'Supportive' : externalScore < -1 ? 'Challenging' : 'Neutral';
+                  const internalCls = internalScore > 1 ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : internalScore < -1 ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800';
+                  const externalCls = externalScore > 1 ? 'bg-blue-50 border-blue-200 text-blue-800' : externalScore < -1 ? 'bg-orange-50 border-orange-200 text-orange-800' : 'bg-gray-50 border-gray-200 text-gray-700';
+                  const decision = app.latestCam?.decision;
+                  const decisionCls = decision === 'APPROVE' ? 'bg-emerald-600' : decision === 'CONDITIONAL_APPROVE' ? 'bg-amber-500' : decision === 'REJECT' ? 'bg-red-600' : 'bg-gray-400';
+                  const decisionLabel = decision === 'APPROVE' ? 'Approved' : decision === 'CONDITIONAL_APPROVE' ? 'Conditional' : decision === 'REJECT' ? 'Rejected' : 'Pending';
+                  return (
+                    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest mr-1">
+                          <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                          Credit Posture
+                        </div>
+                        <span className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${internalCls}`}>
+                          Internal: <span className="font-bold">{internalLabel}</span>
+                          <span className="ml-1 opacity-60">({swot.strengths.length}S / {swot.weaknesses.length}W)</span>
+                        </span>
+                        <span className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${externalCls}`}>
+                          External: <span className="font-bold">{externalLabel}</span>
+                          <span className="ml-1 opacity-60">({swot.opportunities.length}O / {swot.threats.length}T)</span>
+                        </span>
+                        {decision && (
+                          <span className={`ml-auto rounded-full px-3 py-1 text-xs font-bold text-white ${decisionCls}`}>
+                            {decisionLabel}
+                          </span>
+                        )}
+                      </div>
+                      {/* Evidence balance bar */}
+                      <div className="mt-3 flex rounded-full overflow-hidden h-2">
+                        {swot.strengths.length > 0 && <div className="bg-emerald-400" style={{ flex: swot.strengths.length }} />}
+                        {swot.weaknesses.length > 0 && <div className="bg-red-400" style={{ flex: swot.weaknesses.length }} />}
+                        {swot.opportunities.length > 0 && <div className="bg-blue-400" style={{ flex: swot.opportunities.length }} />}
+                        {swot.threats.length > 0 && <div className="bg-amber-400" style={{ flex: swot.threats.length }} />}
+                      </div>
+                      <div className="mt-1.5 flex gap-3 text-[10px] text-gray-400">
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />Strengths</span>
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />Weaknesses</span>
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" />Opportunities</span>
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />Threats</span>
+                        <span className="ml-auto">
+                          {swot.generatedAt ? `Generated ${new Date(swot.generatedAt as string).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Recently generated'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── 2×2 SWOT Grid ── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                   {/* Strengths */}
-                  <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50 shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-3 px-5 py-4 border-b border-emerald-200 bg-emerald-100/60">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 shadow-sm">
+                  <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/60 to-green-50/40 shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-3 px-5 py-4 border-b border-emerald-100 bg-emerald-100/50">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 shadow-sm shrink-0">
                         <TrendingUp className="h-5 w-5 text-white" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="font-bold text-emerald-900 text-sm uppercase tracking-wide">Strengths</p>
-                        <p className="text-xs text-emerald-600">Internal advantages</p>
+                        <p className="text-xs text-emerald-600">Internal advantages — what works in their favour</p>
                       </div>
-                      <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-100 rounded-full px-2.5 py-1 border border-emerald-200">
+                      <span className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-100 rounded-full px-2.5 py-1 border border-emerald-200">
                         {swot.strengths.length}
                       </span>
                     </div>
-                    <ul className="p-5 space-y-3">
+                    <ul className="px-4 py-3 space-y-0.5">
                       {swot.strengths.map((item, i) => (
-                        <li key={i} className="flex gap-3">
-                          <ChevronRight className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                          <span className="text-sm text-gray-700 leading-relaxed">{item}</span>
-                        </li>
+                        <SwotItemRow key={i} text={item} index={i} numCls="bg-emerald-100 text-emerald-700" />
                       ))}
                       {swot.strengths.length === 0 && (
-                        <li className="text-sm text-gray-400 italic">No strengths identified.</li>
+                        <li className="py-6 text-sm text-gray-400 italic text-center">No strengths identified.</li>
                       )}
                     </ul>
                   </div>
 
                   {/* Weaknesses */}
-                  <div className="rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-rose-50 shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-3 px-5 py-4 border-b border-red-200 bg-red-100/60">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 shadow-sm">
+                  <div className="rounded-2xl border border-red-200 bg-gradient-to-br from-red-50/60 to-rose-50/40 shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-3 px-5 py-4 border-b border-red-100 bg-red-100/50">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 shadow-sm shrink-0">
                         <TrendingDown className="h-5 w-5 text-white" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="font-bold text-red-900 text-sm uppercase tracking-wide">Weaknesses</p>
-                        <p className="text-xs text-red-600">Internal vulnerabilities</p>
+                        <p className="text-xs text-red-600">Internal vulnerabilities — areas of concern</p>
                       </div>
-                      <span className="ml-auto text-xs font-bold text-red-700 bg-red-100 rounded-full px-2.5 py-1 border border-red-200">
+                      <span className="shrink-0 text-xs font-bold text-red-700 bg-red-100 rounded-full px-2.5 py-1 border border-red-200">
                         {swot.weaknesses.length}
                       </span>
                     </div>
-                    <ul className="p-5 space-y-3">
+                    <ul className="px-4 py-3 space-y-0.5">
                       {swot.weaknesses.map((item, i) => (
-                        <li key={i} className="flex gap-3">
-                          <ChevronRight className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-                          <span className="text-sm text-gray-700 leading-relaxed">{item}</span>
-                        </li>
+                        <SwotItemRow key={i} text={item} index={i} numCls="bg-red-100 text-red-700" />
                       ))}
                       {swot.weaknesses.length === 0 && (
-                        <li className="text-sm text-gray-400 italic">No weaknesses identified.</li>
+                        <li className="py-6 text-sm text-gray-400 italic text-center">No weaknesses identified.</li>
                       )}
                     </ul>
                   </div>
 
                   {/* Opportunities */}
-                  <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-sky-50 shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-3 px-5 py-4 border-b border-blue-200 bg-blue-100/60">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500 shadow-sm">
+                  <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-sky-50/40 shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-3 px-5 py-4 border-b border-blue-100 bg-blue-100/50">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500 shadow-sm shrink-0">
                         <Lightbulb className="h-5 w-5 text-white" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="font-bold text-blue-900 text-sm uppercase tracking-wide">Opportunities</p>
-                        <p className="text-xs text-blue-600">External growth factors</p>
+                        <p className="text-xs text-blue-600">External growth factors — market tailwinds</p>
                       </div>
-                      <span className="ml-auto text-xs font-bold text-blue-700 bg-blue-100 rounded-full px-2.5 py-1 border border-blue-200">
+                      <span className="shrink-0 text-xs font-bold text-blue-700 bg-blue-100 rounded-full px-2.5 py-1 border border-blue-200">
                         {swot.opportunities.length}
                       </span>
                     </div>
-                    <ul className="p-5 space-y-3">
+                    <ul className="px-4 py-3 space-y-0.5">
                       {swot.opportunities.map((item, i) => (
-                        <li key={i} className="flex gap-3">
-                          <ChevronRight className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                          <span className="text-sm text-gray-700 leading-relaxed">{item}</span>
-                        </li>
+                        <SwotItemRow key={i} text={item} index={i} numCls="bg-blue-100 text-blue-700" />
                       ))}
                       {swot.opportunities.length === 0 && (
-                        <li className="text-sm text-gray-400 italic">No opportunities identified.</li>
+                        <li className="py-6 text-sm text-gray-400 italic text-center">No opportunities identified.</li>
                       )}
                     </ul>
                   </div>
 
                   {/* Threats */}
-                  <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-3 px-5 py-4 border-b border-amber-200 bg-amber-100/60">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 shadow-sm">
+                  <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/60 to-orange-50/40 shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-3 px-5 py-4 border-b border-amber-100 bg-amber-100/50">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 shadow-sm shrink-0">
                         <ShieldAlert className="h-5 w-5 text-white" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="font-bold text-amber-900 text-sm uppercase tracking-wide">Threats</p>
-                        <p className="text-xs text-amber-600">External risks & headwinds</p>
+                        <p className="text-xs text-amber-600">External risks & headwinds — macro pressures</p>
                       </div>
-                      <span className="ml-auto text-xs font-bold text-amber-700 bg-amber-100 rounded-full px-2.5 py-1 border border-amber-200">
+                      <span className="shrink-0 text-xs font-bold text-amber-700 bg-amber-100 rounded-full px-2.5 py-1 border border-amber-200">
                         {swot.threats.length}
                       </span>
                     </div>
-                    <ul className="p-5 space-y-3">
+                    <ul className="px-4 py-3 space-y-0.5">
                       {swot.threats.map((item, i) => (
-                        <li key={i} className="flex gap-3">
-                          <ChevronRight className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                          <span className="text-sm text-gray-700 leading-relaxed">{item}</span>
-                        </li>
+                        <SwotItemRow key={i} text={item} index={i} numCls="bg-amber-100 text-amber-700" />
                       ))}
                       {swot.threats.length === 0 && (
-                        <li className="text-sm text-gray-400 italic">No threats identified.</li>
+                        <li className="py-6 text-sm text-gray-400 italic text-center">No threats identified.</li>
                       )}
                     </ul>
                   </div>
                 </div>
 
-                {/* Summary scorecard */}
-                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
-                  <div className="flex flex-wrap gap-6 items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Analysis Summary</p>
-                      <p className="text-sm text-gray-600">
-                        <span className="font-semibold text-emerald-600">{swot.strengths.length} strengths</span>
-                        {' · '}
-                        <span className="font-semibold text-red-600">{swot.weaknesses.length} weaknesses</span>
-                        {' · '}
-                        <span className="font-semibold text-blue-600">{swot.opportunities.length} opportunities</span>
-                        {' · '}
-                        <span className="font-semibold text-amber-600">{swot.threats.length} threats</span>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                      <span>AI-generated from document analysis · {swot.generatedAt ? new Date(swot.generatedAt as string).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently'}</span>
-                    </div>
+                {/* ── Evidence legend ── */}
+                <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-5 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Evidence Sources Used</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: 'Bank Statement', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+                      { label: 'GST Returns', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+                      { label: 'ITR / Balance Sheet', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+                      { label: 'CIBIL', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+                      { label: 'Research', cls: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+                      { label: 'Factory Visit', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+                      { label: 'Industry', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+                      { label: 'Court Records', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+                      { label: 'RBI Circular', cls: 'bg-red-50 text-red-700 border-red-200' },
+                    ].map((s) => (
+                      <span key={s.label} className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] font-semibold ${s.cls}`}>
+                        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-50" />{s.label}
+                      </span>
+                    ))}
                   </div>
-                  {/* Visual evidence bar */}
-                  <div className="mt-4 flex rounded-full overflow-hidden h-2.5">
-                    <div className="bg-emerald-400 transition-all" style={{ width: `${(swot.strengths.length / 20) * 100}%` }} />
-                    <div className="bg-red-400 transition-all" style={{ width: `${(swot.weaknesses.length / 20) * 100}%` }} />
-                    <div className="bg-blue-400 transition-all" style={{ width: `${(swot.opportunities.length / 20) * 100}%` }} />
-                    <div className="bg-amber-400 transition-all" style={{ width: `${(swot.threats.length / 20) * 100}%` }} />
-                    <div className="bg-gray-100 flex-1" />
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-gray-400">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />Strengths</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Weaknesses</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />Opportunities</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Threats</span>
-                  </div>
+                  <p className="mt-2 text-[10px] text-gray-400">Each finding above is tagged with the data source the AI used to derive it — hover any item to review the evidence chain.</p>
                 </div>
               </>
             ) : (

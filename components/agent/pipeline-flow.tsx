@@ -5,7 +5,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   type Node,
@@ -53,7 +52,7 @@ const STAGE_META: Record<string, { label: string; icon: React.ReactNode; group: 
   itr_balancesheet: { label: 'ITR / Balance Sheet', icon: <Brain className="h-4 w-4" />, group: 'agent' },
   cibil_cmr: { label: 'CIBIL CMR', icon: <AlertCircle className="h-4 w-4" />, group: 'agent' },
   scout: { label: 'OSINT Scout', icon: <Search className="h-4 w-4" />, group: 'agent' },
-  qualitative_gate: { label: 'Qualitative Gate', icon: <GitMerge className="h-4 w-4" />, group: 'gate' },
+  qualitative_gate: { label: 'Field Notes Review', icon: <GitMerge className="h-4 w-4" />, group: 'gate' },
   reconciler: { label: 'AI Reconciler', icon: <Brain className="h-4 w-4" />, group: 'reconciler' },
   cam_generator: { label: 'CAM Generator', icon: <FileBarChart2 className="h-4 w-4" />, group: 'io' },
 };
@@ -88,6 +87,14 @@ function statusStyle(status: StageStatus) {
   }
 }
 
+// ─── Confidence label helper ────────────────────────────────────────────────
+function confLabel(confidence: number): { text: string; color: string; bg: string } | null {
+  if (confidence <= 0) return null;
+  if (confidence >= 0.85) return { text: '✓ Clear data', color: '#15803d', bg: '#dcfce7' };
+  if (confidence >= 0.65) return { text: '~ Minor gaps', color: '#92400e', bg: '#fef3c7' };
+  return { text: '! Verify manually', color: '#b91c1c', bg: '#fee2e2' };
+}
+
 // ─── Custom node ──────────────────────────────────────────────────────────────
 interface PipelineNodeData extends Record<string, unknown> {
   stage: string;
@@ -108,13 +115,13 @@ function PipelineNode({ data }: NodeProps) {
   const d = data as PipelineNodeData;
   const meta = STAGE_META[d.stage] ?? { label: d.stage, icon: <Brain className="h-4 w-4" />, group: 'agent' };
   const { border, background, shadow } = statusStyle(d.status);
-  const confPct = d.confidence > 0 ? `${Math.round(d.confidence * 100)}%` : null;
+  const cl = confLabel(d.confidence);
 
   const labelColor =
     d.status === 'completed' ? '#15803d' :
-    d.status === 'in-progress' ? '#1d4ed8' :
-    d.status === 'failed' ? '#b91c1c' :
-    '#6b7280';
+      d.status === 'in-progress' ? '#1d4ed8' :
+        d.status === 'failed' ? '#b91c1c' :
+          '#6b7280';
 
   return (
     <div
@@ -147,17 +154,16 @@ function PipelineNode({ data }: NodeProps) {
         {d.message || 'Waiting…'}
       </p>
 
-      {/* Footer row: confidence + timestamp */}
-      {(confPct || d.timestamp) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, gap: 4 }}>
-          {confPct && (
+      {/* Footer row: data quality + timestamp */}
+      {(cl || d.timestamp) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 5, gap: 4 }}>
+          {cl && (
             <span style={{
               fontSize: 10, fontWeight: 600,
-              background: d.status === 'completed' ? '#dcfce7' : '#e0e7ff',
-              color: d.status === 'completed' ? '#15803d' : '#3730a3',
+              background: cl.bg, color: cl.color,
               borderRadius: 4, padding: '1px 5px',
             }}>
-              {confPct} conf.
+              {cl.text}
             </span>
           )}
           {d.timestamp && (
@@ -311,7 +317,7 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
       </div>
 
       {/* React Flow canvas */}
-      <div style={{ height: 920 }}>
+      <div style={{ height: 780 }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -330,16 +336,7 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
           <Controls
             style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8 }}
           />
-          <MiniMap
-            nodeColor={(n) => {
-              const d = n.data as PipelineNodeData;
-              if (d.status === 'completed') return '#16a34a';
-              if (d.status === 'in-progress') return '#2563eb';
-              if (d.status === 'failed') return '#dc2626';
-              return '#d1d5db';
-            }}
-            style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}
-          />
+
         </ReactFlow>
       </div>
     </div>
