@@ -5,6 +5,7 @@ import {
   Download, AlertTriangle, CheckCircle2, XCircle, Brain,
   Shield, TrendingUp, Landmark, Building2, ClipboardList,
   Send, Sparkles, Loader2, ChevronDown, ChevronUp,
+  ThumbsUp, ThumbsDown, Zap, ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -31,6 +32,12 @@ interface LatestCam {
   reductionRationale: string | null;
   conditions: string[] | null;
   thinkingTrace: string | null;
+  swotJson: {
+    strengths: string[];
+    weaknesses: string[];
+    opportunities: string[];
+    threats: string[];
+  } | null;
   pdfBlobUrl: string | null;
   generatedAt: string;
 }
@@ -67,10 +74,10 @@ function ScoreRing({ score, size = 80 }: { score: number | null; size?: number }
 
 // ─── 5C card ──────────────────────────────────────────────────────────────────
 const C_META = [
-  { key: 'character',  label: 'Character',  icon: Shield,       desc: 'Trustworthiness & repayment history' },
-  { key: 'capacity',   label: 'Capacity',   icon: TrendingUp,   desc: 'Cash flows & debt-service ability' },
-  { key: 'capital',    label: 'Capital',    icon: Landmark,     desc: 'Net worth & equity cushion' },
-  { key: 'collateral', label: 'Collateral', icon: Building2,    desc: 'Assets pledged as security' },
+  { key: 'character', label: 'Character', icon: Shield, desc: 'Trustworthiness & repayment history' },
+  { key: 'capacity', label: 'Capacity', icon: TrendingUp, desc: 'Cash flows & debt-service ability' },
+  { key: 'capital', label: 'Capital', icon: Landmark, desc: 'Net worth & equity cushion' },
+  { key: 'collateral', label: 'Collateral', icon: Building2, desc: 'Assets pledged as security' },
   { key: 'conditions', label: 'Conditions', icon: ClipboardList, desc: 'Industry, macro & loan purpose' },
 ] as const;
 
@@ -156,6 +163,257 @@ function FiveCCard({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── SWOT Panel ───────────────────────────────────────────────────────────────
+const SWOT_META = [
+  {
+    key: 'strengths' as const,
+    label: 'Strengths',
+    subtitle: 'Internal advantages',
+    icon: ThumbsUp,
+    accent: '#16a34a',
+    gradFrom: 'from-emerald-500',
+    gradTo: 'to-teal-400',
+    bg: 'bg-emerald-50',
+    cardBorder: 'border-emerald-200',
+    numBg: 'bg-emerald-600',
+    itemHover: 'hover:bg-emerald-100/60',
+    tagBg: 'bg-emerald-100',
+    tagText: 'text-emerald-700',
+    tagBorder: 'border-emerald-200',
+    textColor: 'text-emerald-950',
+    quadrant: 'SW', // top-left
+  },
+  {
+    key: 'weaknesses' as const,
+    label: 'Weaknesses',
+    subtitle: 'Internal vulnerabilities',
+    icon: ThumbsDown,
+    accent: '#dc2626',
+    gradFrom: 'from-red-500',
+    gradTo: 'to-rose-400',
+    bg: 'bg-red-50',
+    cardBorder: 'border-red-200',
+    numBg: 'bg-red-600',
+    itemHover: 'hover:bg-red-100/60',
+    tagBg: 'bg-red-100',
+    tagText: 'text-red-700',
+    tagBorder: 'border-red-200',
+    textColor: 'text-red-950',
+    quadrant: 'NE',
+  },
+  {
+    key: 'opportunities' as const,
+    label: 'Opportunities',
+    subtitle: 'External tailwinds',
+    icon: Zap,
+    accent: '#2563eb',
+    gradFrom: 'from-blue-500',
+    gradTo: 'to-indigo-400',
+    bg: 'bg-blue-50',
+    cardBorder: 'border-blue-200',
+    numBg: 'bg-blue-600',
+    itemHover: 'hover:bg-blue-100/60',
+    tagBg: 'bg-blue-100',
+    tagText: 'text-blue-700',
+    tagBorder: 'border-blue-200',
+    textColor: 'text-blue-950',
+    quadrant: 'SW',
+  },
+  {
+    key: 'threats' as const,
+    label: 'Threats',
+    subtitle: 'External headwinds',
+    icon: ShieldAlert,
+    accent: '#d97706',
+    gradFrom: 'from-amber-500',
+    gradTo: 'to-orange-400',
+    bg: 'bg-amber-50',
+    cardBorder: 'border-amber-200',
+    numBg: 'bg-amber-600',
+    itemHover: 'hover:bg-amber-100/60',
+    tagBg: 'bg-amber-100',
+    tagText: 'text-amber-700',
+    tagBorder: 'border-amber-200',
+    textColor: 'text-amber-950',
+    quadrant: 'NE',
+  },
+] as const;
+
+function SwotBar({ positiveCount, negativeCount, positiveColor, negativeColor }: {
+  positiveCount: number; negativeCount: number;
+  positiveColor: string; negativeColor: string;
+}) {
+  const total = positiveCount + negativeCount;
+  const posW = total > 0 ? Math.round((positiveCount / total) * 100) : 50;
+  return (
+    <div className="flex items-center gap-2 text-[10px] font-semibold">
+      <span className={positiveColor}>{positiveCount} positive</span>
+      <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+        <div
+          className={`h-full rounded-full bg-emerald-500 transition-all duration-700`}
+          style={{ width: `${posW}%` }}
+        />
+      </div>
+      <span className={negativeColor}>{negativeCount} risk</span>
+    </div>
+  );
+}
+
+function SwotPanel({ swot }: { swot: NonNullable<LatestCam['swotJson']> }) {
+  const [activeKey, setActiveKey] = useState<typeof SWOT_META[number]['key'] | null>(null);
+
+  const positiveCount = swot.strengths.length + swot.opportunities.length;
+  const negativeCount = swot.weaknesses.length + swot.threats.length;
+  const total = positiveCount + negativeCount;
+  const posPercent = total > 0 ? Math.round((positiveCount / total) * 100) : 50;
+  const sentiment = posPercent >= 70 ? 'Favourable' : posPercent >= 50 ? 'Balanced' : 'Cautionary';
+  const sentimentColor = posPercent >= 70 ? 'text-emerald-600' : posPercent >= 50 ? 'text-amber-600' : 'text-red-600';
+  const sentimentBg = posPercent >= 70 ? 'bg-emerald-50 border-emerald-200' : posPercent >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+
+      {/* ── Header ── */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-6 py-5">
+        {/* decorative blobs */}
+        <div className="pointer-events-none absolute -top-8 -left-8 h-32 w-32 rounded-full bg-indigo-500/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-8 -right-8 h-32 w-32 rounded-full bg-purple-500/10 blur-2xl" />
+
+        <div className="relative flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="rounded-lg bg-white/10 p-1.5">
+                <Brain className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-widest text-white/60">Strategic Assessment</span>
+            </div>
+            <h3 className="text-xl font-extrabold text-white leading-tight">SWOT Analysis</h3>
+            <p className="text-xs text-white/50 mt-0.5">AI-synthesised from financial signals &amp; market research</p>
+          </div>
+
+          {/* Sentiment badge */}
+          <div className={`rounded-xl border px-3 py-2 ${sentimentBg} text-center`}>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Overall Sentiment</p>
+            <p className={`text-lg font-extrabold ${sentimentColor}`}>{sentiment}</p>
+            <p className="text-[10px] text-gray-400">{posPercent}% positive signals</p>
+          </div>
+        </div>
+
+        {/* Balance bar */}
+        <div className="relative mt-4 space-y-1.5">
+          <div className="flex justify-between text-[10px] text-white/50 font-medium">
+            <span>Strengths + Opportunities ({positiveCount})</span>
+            <span>Weaknesses + Threats ({negativeCount})</span>
+          </div>
+          <div className="h-2 rounded-full bg-white/10 overflow-hidden flex">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full transition-all duration-1000"
+              style={{ width: `${posPercent}%` }}
+            />
+            <div className="flex-1 bg-gradient-to-r from-red-400 to-rose-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Internal / External axis labels ── */}
+      <div className="grid grid-cols-2 border-b border-gray-100">
+        <div className="flex items-center justify-center gap-1.5 py-2 border-r border-gray-100 bg-gray-50/60">
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Internal factors</span>
+        </div>
+        <div className="flex items-center justify-center gap-1.5 py-2 bg-gray-50/60">
+          <div className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">External factors</span>
+        </div>
+      </div>
+
+      {/* ── 2×2 Quadrant grid ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2">
+        {SWOT_META.map((meta, idx) => {
+          const { key, label, subtitle, icon: Icon, accent, gradFrom, gradTo,
+            bg, cardBorder, numBg, itemHover, tagBg, tagText, tagBorder, textColor } = meta;
+          const items = swot[key];
+          const isActive = activeKey === key;
+          const borders = [
+            'border-b sm:border-r border-gray-100',   // 0: strengths
+            'border-b border-gray-100',                // 1: weaknesses
+            'sm:border-r border-gray-100',             // 2: opportunities
+            '',                                        // 3: threats
+          ];
+
+          return (
+            <div
+              key={key}
+              className={`${bg} ${borders[idx]} transition-all duration-200 ${isActive ? 'ring-2 ring-inset' : ''}`}
+              style={isActive ? { '--tw-ring-color': accent } as React.CSSProperties : {}}
+            >
+              {/* Quadrant header */}
+              <div
+                className={`flex items-center justify-between px-5 pt-5 pb-3 cursor-pointer select-none`}
+                onClick={() => setActiveKey(isActive ? null : key)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`rounded-xl bg-gradient-to-br ${gradFrom} ${gradTo} p-2.5 shadow-sm`}>
+                    <Icon className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-gray-900 text-sm leading-tight">{label}</p>
+                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">{subtitle}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-[11px] font-extrabold text-white ${numBg}`}>
+                    {items.length}
+                  </span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform duration-200 ${isActive ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+
+              {/* Items list */}
+              <div className="px-5 pb-5 space-y-2">
+                {items.length > 0
+                  ? items.map((item, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors duration-150 ${itemHover} bg-white/60 border ${cardBorder}`}
+                    >
+                      {/* Number badge */}
+                      <span
+                        className={`shrink-0 mt-0.5 inline-flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-extrabold text-white ${numBg}`}
+                      >
+                        {i + 1}
+                      </span>
+                      <p className={`text-sm leading-snug font-medium ${textColor}`}>{item}</p>
+                    </div>
+                  ))
+                  : (
+                    <div className={`rounded-xl border ${cardBorder} bg-white/60 px-4 py-3 text-center`}>
+                      <p className="text-xs text-gray-400 italic">No items identified by the AI.</p>
+                    </div>
+                  )
+                }
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Footer insight bar ── */}
+      <div className="bg-gray-50 border-t border-gray-100 px-6 py-3 flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex gap-3 flex-wrap">
+          {SWOT_META.map(({ key, label, tagBg, tagText, tagBorder }) => (
+            <span key={key} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${tagBg} ${tagText} ${tagBorder}`}>
+              <span>{label}</span>
+              <span className="rounded-full bg-white/70 px-1">{swot[key].length}</span>
+            </span>
+          ))}
+        </div>
+        <p className="text-[10px] text-gray-400">Click a quadrant header to highlight it</p>
       </div>
     </div>
   );
@@ -374,11 +632,10 @@ export function CamOutputPanel({
               )}
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                    msg.role === 'user'
+                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${msg.role === 'user'
                       ? 'bg-indigo-600 text-white rounded-br-sm'
                       : 'bg-gray-100 text-gray-800 rounded-bl-sm'
-                  }`}>
+                    }`}>
                     {msg.content}
                   </div>
                 </div>
@@ -412,9 +669,14 @@ export function CamOutputPanel({
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════
+      {/* ═════════════════════════════════════════════
+          SWOT ANALYSIS
+      ═════════════════════════════════════════════ */}
+      {cam.swotJson && <SwotPanel swot={cam.swotJson} />}
+
+      {/* ═════════════════════════════════════════════
           AI REASONING TRACE (collapsible)
-      ═══════════════════════════════════════════════ */}
+      ═════════════════════════════════════════════ */}
       {cam.thinkingTrace && (
         <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
           <button

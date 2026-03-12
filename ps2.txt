@@ -1,0 +1,36 @@
+The Challenge
+
+Your mission is to build a hosted web application (accessible without a VPN) that transforms raw, unstructured financial data into a comprehensive, AI-backed investment/assessment report.
+
+The User Journey
+
+Your solution must guide a Credit Analyst (User) through the following four stages:
+
+Entity Onboarding
+The Interface: A seamless onboarding page to capture basic entity details (CIN, PAN, Sector, Turnover, etc.) and specific Loan Details (Type, Amount, Tenure, Interest).
+Note: This can be a multi-step form for better UX.
+Intelligent Data Ingestion
+The Task: A secure upload interface for 5 critical document types for the entity being analysed. (Sample documents will be shared with all participants)
+ALM (Asset-Liability Management)
+Shareholding Pattern
+Borrowing Profile
+Annual Reports (P&L, Cashflow, Balance Sheet)
+Portfolio Cuts/Performance Data
+Automated Extraction & Schema Mapping (The Core)
+Classification: Automatically identify and categorize the uploaded files.
+Human-in-the-loop: Allow users to approve, deny, or edit the auto-classification.
+Dynamic Schema: Enable users to define or configure the output schema to ingest / structure data extracted from the raw files / documents.
+Extraction: Ingest the data from the files into your defined schema with high precision, with user defined adjustments as needed.
+Pre-Cognitive Secondary Analysis & Reporting
+Secondary Research: Programmatically scrape alternate data (News, Legal, Market Sentiment, anything else) to provide a 360-degree view of the entity/sector/subsector/macro trends etc
+Triangulate secondary research information with data extracted from above.
+Explainable Prediction / Recommendation: Build a recommendation engine for loan approval with a clear "Reasoning Engine."
+SWOT & GenAI: Generate a comprehensive SWOT analysis and a downloadable final investment report, presented in a easily explainable / consumable structure.
+Success Criteria & Evaluation
+
+We will judge the products based on the following:
+
+Operational Excellence: Is the web app stable? Do uploads and forms work flawlessly?
+Extraction Accuracy: How well does the parser handle complex, non-standard financial tables?
+Analytical Depth: How thorough is the secondary research and the quality of the "Pre-Cognitive" risk signals?
+User Experience: Is the journey from "Raw PDF/Excel/Image" + Secondary research to "Final Report" intuitive and fast?
