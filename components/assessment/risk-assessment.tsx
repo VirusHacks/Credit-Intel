@@ -19,13 +19,13 @@ export function RiskAssessment({ assessment }: RiskAssessmentProps) {
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case 'low':
-        return { text: 'text-green-600', bg: 'bg-green-50', badge: 'bg-green-100 text-green-800' };
+        return { text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/20', badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' };
       case 'medium':
-        return { text: 'text-yellow-600', bg: 'bg-yellow-50', badge: 'bg-yellow-100 text-yellow-800' };
+        return { text: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' };
       case 'high':
-        return { text: 'text-red-600', bg: 'bg-red-50', badge: 'bg-red-100 text-red-800' };
+        return { text: 'text-destructive', bg: 'bg-destructive/5', badge: 'bg-destructive/10 text-destructive' };
       default:
-        return { text: 'text-gray-600', bg: 'bg-gray-50', badge: 'bg-gray-100 text-gray-800' };
+        return { text: 'text-muted-foreground', bg: 'bg-secondary/50', badge: 'bg-muted text-muted-foreground' };
     }
   };
 
@@ -65,12 +65,12 @@ export function RiskAssessment({ assessment }: RiskAssessmentProps) {
   const riskColor = getRiskColor(assessment.riskRating);
   const creditScoreColor =
     assessment.creditScore >= 740
-      ? { text: 'text-green-600', bg: 'bg-green-50' }
+      ? { text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/20' }
       : assessment.creditScore >= 670
-        ? { text: 'text-blue-600', bg: 'bg-blue-50' }
+        ? { text: 'text-primary', bg: 'bg-primary/5' }
         : assessment.creditScore >= 580
-          ? { text: 'text-yellow-600', bg: 'bg-yellow-50' }
-          : { text: 'text-red-600', bg: 'bg-red-50' };
+          ? { text: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20' }
+          : { text: 'text-destructive', bg: 'bg-destructive/5' };
 
   return (
     <div className="space-y-6">
@@ -138,9 +138,9 @@ export function RiskAssessment({ assessment }: RiskAssessmentProps) {
       </Card>
 
       {/* Recommendation */}
-      <Card className="border-l-4 border-blue-500 p-6">
+      <Card className="border-l-4 border-primary p-6">
         <div className="flex gap-3">
-          <CheckCircle2 className="h-6 w-6 flex-shrink-0 text-blue-600" />
+          <CheckCircle2 className="h-6 w-6 flex-shrink-0 text-primary" />
           <div>
             <h4 className="font-semibold">Credit Recommendation</h4>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -159,9 +159,9 @@ export function RiskAssessment({ assessment }: RiskAssessmentProps) {
           <p className="mt-2 text-2xl font-bold">
             {(assessment.approvalProbability * 100).toFixed(0)}%
           </p>
-          <div className="mt-2 h-1 w-full rounded-full bg-gray-200">
+          <div className="mt-2 h-1 w-full rounded-full bg-secondary">
             <div
-              className="h-full rounded-full bg-green-500"
+              className="h-full rounded-full bg-emerald-500"
               style={{ width: `${assessment.approvalProbability * 100}%` }}
             />
           </div>

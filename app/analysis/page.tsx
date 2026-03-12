@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { AgentActivityFeed } from '@/components/agent/agent-activity-feed';
 import { Card } from '@/components/ui/card';
 import { MainNav } from '@/components/layout/main-nav';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Brain, Loader2, ChevronDown } from 'lucide-react';
 import type { AppListItem } from '@/components/tables/applications-table';
 
@@ -17,7 +19,6 @@ export default function AnalysisPage() {
       .then((r) => r.json())
       .then((d: { data: AppListItem[] }) => {
         setApps(d.data);
-        // Auto-select the most recently active application
         const active = d.data.find((a) =>
           ['ingesting', 'analyzing', 'reconciling', 'generating_cam', 'awaiting_qualitative', 'complete'].includes(a.pipelineStatus)
         );
@@ -31,28 +32,24 @@ export default function AnalysisPage() {
   const selected = apps.find((a) => a.id === selectedId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <MainNav />
-      <main className="mx-auto max-w-6xl space-y-6 p-6 sm:p-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Brain className="w-8 h-8 text-blue-600" />
-            AI Analysis Monitor
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Watch the agent pipeline run in real time for any application.
-          </p>
-        </div>
+      <main className="mx-auto max-w-[1320px] space-y-6 px-6 py-8">
+        <PageHeader
+          title="AI Analysis Monitor"
+          description="Watch the agent pipeline run in real time for any application."
+        />
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : apps.length === 0 ? (
-          <Card className="p-12 text-center">
-            <p className="text-muted-foreground">No applications yet. Create one and run the pipeline to monitor it here.</p>
-          </Card>
+          <EmptyState
+            icon={<Brain className="h-5 w-5" />}
+            title="No applications yet"
+            description="Create one and run the pipeline to monitor it here."
+          />
         ) : (
           <>
             {/* App selector */}
@@ -63,7 +60,7 @@ export default function AnalysisPage() {
                   <select
                     value={selectedId}
                     onChange={(e) => setSelectedId(e.target.value)}
-                    className="w-full appearance-none rounded-md border border-input bg-background px-3 py-2 pr-8 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full appearance-none rounded-xl border border-input bg-background px-3 py-2 pr-8 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {apps.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -75,14 +72,13 @@ export default function AnalysisPage() {
                 </div>
                 {selected && (
                   <div className="flex gap-4 text-sm">
-                    <span className="text-muted-foreground">Industry: <strong>{selected.industry ?? '—'}</strong></span>
-                    <span className="text-muted-foreground">Progress: <strong>{selected.pipelineStatus.replace(/_/g, ' ')}</strong></span>
+                    <span className="text-muted-foreground">Industry: <strong className="text-foreground">{selected.industry ?? '—'}</strong></span>
+                    <span className="text-muted-foreground">Status: <strong className="text-foreground">{selected.pipelineStatus.replace(/_/g, ' ')}</strong></span>
                   </div>
                 )}
               </div>
             </Card>
 
-            {/* Activity feed */}
             {selectedId && <AgentActivityFeed appId={selectedId} />}
           </>
         )}

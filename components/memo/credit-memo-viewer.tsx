@@ -150,19 +150,19 @@ export function CreditMemoViewer({ application }: CreditMemoViewerProps) {
         <section>
           <h2 className="text-xl font-bold mb-3">Financial Analysis</h2>
           <div className="mb-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg bg-blue-50 p-3">
+            <div className="rounded-xl bg-primary/5 p-3">
               <p className="text-xs font-medium text-muted-foreground">Total Assets</p>
               <p className="mt-1 font-semibold">
                 {formatCurrency(application.financialMetrics.totalAssets)}
               </p>
             </div>
-            <div className="rounded-lg bg-green-50 p-3">
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 p-3">
               <p className="text-xs font-medium text-muted-foreground">Total Equity</p>
               <p className="mt-1 font-semibold">
                 {formatCurrency(application.financialMetrics.equity)}
               </p>
             </div>
-            <div className="rounded-lg bg-purple-50 p-3">
+            <div className="rounded-xl bg-violet-50 dark:bg-violet-950/20 p-3">
               <p className="text-xs font-medium text-muted-foreground">
                 Annual Revenue
               </p>
@@ -187,8 +187,8 @@ export function CreditMemoViewer({ application }: CreditMemoViewerProps) {
         {/* Credit Recommendation */}
         <section>
           <h2 className="text-xl font-bold mb-3">Credit Recommendation</h2>
-          <div className="rounded-lg bg-blue-50 p-4">
-            <p className="font-semibold text-blue-900">
+          <div className="rounded-xl bg-primary/5 p-4">
+            <p className="font-semibold text-foreground">
               {memo.credit_recommendation}
             </p>
           </div>

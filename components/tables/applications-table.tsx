@@ -31,14 +31,14 @@ const PIPELINE_LABELS: Record<string, string> = {
 };
 
 const PIPELINE_COLORS: Record<string, string> = {
-  not_started: 'bg-gray-100 text-gray-700',
-  ingesting: 'bg-blue-100 text-blue-700',
-  analyzing: 'bg-blue-100 text-blue-700',
-  awaiting_qualitative: 'bg-amber-100 text-amber-800',
-  reconciling: 'bg-purple-100 text-purple-700',
-  generating_cam: 'bg-indigo-100 text-indigo-700',
-  complete: 'bg-green-100 text-green-700',
-  failed: 'bg-red-100 text-red-700',
+  not_started: 'bg-muted text-muted-foreground',
+  ingesting: 'bg-primary/10 text-primary',
+  analyzing: 'bg-primary/10 text-primary',
+  awaiting_qualitative: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  reconciling: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  generating_cam: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+  complete: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  failed: 'bg-destructive/10 text-destructive',
 };
 
 export function ApplicationsTable({ applications, onDelete }: ApplicationsTableProps) {
@@ -47,7 +47,7 @@ export function ApplicationsTable({ applications, onDelete }: ApplicationsTableP
       <div className="rounded-lg border bg-card p-12 text-center">
         <p className="text-muted-foreground">No applications found.</p>
         <Link href="/applications/new">
-          <Button className="mt-4 bg-blue-600 hover:bg-blue-700">
+          <Button className="mt-4">
             Create First Application
           </Button>
         </Link>
@@ -103,7 +103,7 @@ export function ApplicationsTable({ applications, onDelete }: ApplicationsTableP
                   </Link>
                   <Button variant="ghost" size="icon" className="h-8 w-8"
                     onClick={() => onDelete?.(app.id)} title="Delete">
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
               </td>

@@ -285,7 +285,7 @@ export default function ApplicationDetailPage() {
         <MainNav />
         <main className="flex items-center justify-center p-20">
           <div className="text-center space-y-3">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
             <p className="text-muted-foreground">Loading application…</p>
           </div>
         </main>
@@ -299,7 +299,7 @@ export default function ApplicationDetailPage() {
         <MainNav />
         <main className="flex items-center justify-center p-20">
           <div className="text-center space-y-4">
-            <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+            <XCircle className="h-12 w-12 text-destructive mx-auto" />
             <h1 className="text-2xl font-bold">{error ?? 'Application not found'}</h1>
             <Link href="/applications">
               <Button>Back to Applications</Button>
@@ -322,18 +322,18 @@ export default function ApplicationDetailPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <MainNav />
-      <main className="mx-auto max-w-7xl space-y-6 p-6 sm:p-8">
+      <main className="mx-auto max-w-[1320px] space-y-6 px-6 py-8">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <Link href="/applications" className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline mb-2">
+            <Link href="/applications" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
               <ArrowLeft className="h-3.5 w-3.5" />
               Applications
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">{app.companyName ?? 'Unnamed Company'}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{app.companyName ?? 'Unnamed Company'}</h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <PipelineStatusBadge status={app.pipelineStatus} />
               {app.cin && <span className="text-xs text-muted-foreground">CIN: {app.cin}</span>}
@@ -344,13 +344,13 @@ export default function ApplicationDetailPage() {
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => void handleRunPipeline()} disabled={actionLoading !== null}
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              className="gap-2">
               {actionLoading === 'pipeline' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {['analyzing', 'reconciling', 'generating_cam'].includes(app.pipelineStatus) ? 'Pipeline Running…' : 'Run AI Pipeline'}
             </Button>
             {showQualifyButton && (
               <Link href={`/applications/${app.id}/qualify`}>
-                <Button variant="outline" className="gap-2 border-amber-500 text-amber-700 hover:bg-amber-50">
+                <Button variant="outline" className="gap-2 border-amber-400 text-amber-700 hover:bg-amber-50">
                   <FileCheck2 className="h-4 w-4" />
                   Field Qualify
                 </Button>
@@ -358,7 +358,7 @@ export default function ApplicationDetailPage() {
             )}
             {showCAMButton && (
               <Button onClick={() => void handleGenerateCAM()} disabled={actionLoading !== null}
-                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
                 {actionLoading === 'cam' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileBarChart2 className="h-4 w-4" />}
                 Generate CAM
               </Button>
@@ -402,8 +402,8 @@ export default function ApplicationDetailPage() {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase">Progress</p>
             <div className="mt-2 space-y-1">
-              <div className="h-2 w-full rounded bg-gray-200">
-                <div className="h-2 rounded bg-blue-600 transition-all duration-500"
+              <div className="h-2 w-full rounded bg-secondary">
+                <div className="h-2 rounded bg-primary transition-all duration-500"
                   style={{ width: `${app.analysisProgress ?? 0}%` }} />
               </div>
               <p className="text-xs text-muted-foreground">{app.analysisProgress ?? 0}% complete</p>
@@ -439,21 +439,19 @@ export default function ApplicationDetailPage() {
         )}
 
         {/* Tabs */}
-        <div className="border-b bg-white -mx-6 sm:-mx-8 px-6 sm:px-8">
-          <div className="flex gap-1 overflow-x-auto">
-            {tabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-muted-foreground hover:text-gray-800'
-                  }`}>
-                {tab.label}
-                {tab.id === 'cam' && app.latestCam && (
-                  <span className="ml-1.5 rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">
-                    {app.latestCam.decision.replace('_', ' ')}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+        <div className="flex gap-1 overflow-x-auto rounded-lg bg-secondary/50 p-1">
+          {tabs.map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-white text-foreground shadow-sm dark:bg-card' : 'text-muted-foreground hover:text-foreground'
+                }`}>
+              {tab.label}
+              {tab.id === 'cam' && app.latestCam && (
+                <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-700">
+                  {app.latestCam.decision.replace('_', ' ')}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Tab: AI Pipeline */}
@@ -583,8 +581,8 @@ export default function ApplicationDetailPage() {
 
               {/* ── Five C's Assessment ────────────────────────────────── */}
               <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
                   Five C&apos;s Credit Assessment
                 </h2>
                 <div className="space-y-3">
@@ -661,8 +659,8 @@ export default function ApplicationDetailPage() {
               {/* ── Loan Conditions ────────────────────────────────────── */}
               {app.latestCam.conditions && (app.latestCam.conditions as string[]).length > 0 && (
                 <Card className="p-6">
-                  <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <ClipboardList className="h-5 w-5 text-indigo-600" />
+                  <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                    <ClipboardList className="h-5 w-5 text-primary" />
                     Loan Conditions &amp; Covenants
                   </h2>
                   <ul className="space-y-2">
@@ -704,7 +702,7 @@ export default function ApplicationDetailPage() {
 
               {/* ── AI Chat / Ask About Applicant ─────────────────────── */}
               <Card className="overflow-hidden">
-                <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center gap-3">
+<div className="px-6 py-4 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground flex items-center gap-3">
                   <div className="rounded-full bg-white/20 p-2">
                     <MessageSquare className="h-5 w-5" />
                   </div>
@@ -725,7 +723,7 @@ export default function ApplicationDetailPage() {
                   ].map((q) => (
                     <button key={q}
                       onClick={() => { setChatInput(q); }}
-                      className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+  className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
                     >
                       {q}
                     </button>
@@ -753,7 +751,7 @@ export default function ApplicationDetailPage() {
                   {chatLoading && (
                     <div className="flex justify-start">
                       <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+<Loader2 className="h-4 w-4 animate-spin text-primary" />
                         <span className="text-sm text-muted-foreground">Thinking…</span>
                       </div>
                     </div>
@@ -768,10 +766,10 @@ export default function ApplicationDetailPage() {
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleChatSend(); } }}
                     placeholder="Ask about this applicant's creditworthiness…"
-                    className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+className="flex-1 rounded-lg border border-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   <Button onClick={() => void handleChatSend()} disabled={chatLoading || !chatInput.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 rounded-lg px-4">
+className="rounded-lg px-4">
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>

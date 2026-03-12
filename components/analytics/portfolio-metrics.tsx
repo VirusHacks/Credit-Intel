@@ -42,12 +42,12 @@ export function PortfolioMetrics({
     {
       label: 'Total Applications',
       value: String(data?.totalApplications ?? 0),
-      icon: <FileText className="w-5 h-5 text-blue-600" />,
+      icon: <FileText className="w-5 h-5 text-primary" />,
     },
     {
       label: 'Completed Analyses',
       value: String(data?.completedAnalyses ?? 0),
-      icon: <Users className="w-5 h-5 text-purple-600" />,
+      icon: <Users className="w-5 h-5 text-violet-600" />,
     },
     {
       label: 'Approval Rate',
@@ -77,10 +77,10 @@ export function PortfolioMetrics({
         <Card key={index} className="p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-1">{metric.label}</p>
-              <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
+              <p className="text-sm text-muted-foreground mb-1">{metric.label}</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{metric.value}</p>
             </div>
-            <div className="flex-shrink-0 p-2 bg-gray-50 rounded-lg">
+            <div className="flex-shrink-0 p-2 bg-secondary/50 rounded-xl">
               {metric.icon}
             </div>
           </div>

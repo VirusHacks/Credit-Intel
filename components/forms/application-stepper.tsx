@@ -161,9 +161,9 @@ export function ApplicationStepper() {
               <div className="flex flex-col items-center">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition-all ${index + 1 < currentStep
-                    ? 'border-green-600 bg-green-600 text-white'
+                    ? 'border-emerald-600 bg-emerald-600 text-white'
                     : index + 1 === currentStep
-                      ? 'border-blue-600 bg-blue-600 text-white'
+                      ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-muted-foreground bg-background text-muted-foreground'
                     }`}
                 >
@@ -179,7 +179,7 @@ export function ApplicationStepper() {
               </div>
               {index + 1 < STEPS.length && (
                 <div
-                  className={`mx-2 h-1 flex-1 transition-all ${index + 1 < currentStep ? 'bg-green-600' : 'bg-muted'
+                  className={`mx-2 h-1 flex-1 transition-all ${index + 1 < currentStep ? 'bg-emerald-600' : 'bg-muted'
                     }`}
                 />
               )}
@@ -218,11 +218,11 @@ export function ApplicationStepper() {
         </Button>
         <div className="flex flex-col items-end gap-2">
           {submitError && (
-            <p className="text-sm text-red-600">{submitError}</p>
+            <p className="text-sm text-destructive">{submitError}</p>
           )}
           {currentStep === STEPS.length ? (
             <Button
-              className="gap-2 bg-green-600 hover:bg-green-700"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
               onClick={() => void handleSubmit()}
               disabled={submitting}
             >
@@ -234,7 +234,7 @@ export function ApplicationStepper() {
             </Button>
           ) : (
             <Button
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2"
               onClick={handleNext}
             >
               Next <ChevronRight className="h-4 w-4" />

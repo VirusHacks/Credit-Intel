@@ -29,7 +29,7 @@ const colors = {
 export function RiskHeatmap() {
   return (
     <Card className="p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Distribution</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-4">Risk Distribution</h3>
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={data} margin={{ top: 20, right: 30, bottom: 60, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

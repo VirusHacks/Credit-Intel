@@ -56,15 +56,15 @@ export function AnalysisTracker({ analysisStatus }: AnalysisTrackerProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-700 border-green-300';
+        return 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-700 border-blue-300 animate-pulse';
+        return 'bg-primary/10 text-primary border-primary/30 animate-pulse';
       case 'pending':
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return 'bg-muted text-muted-foreground border-border';
       case 'failed':
-        return 'bg-red-100 text-red-700 border-red-300';
+        return 'bg-destructive/10 text-destructive border-destructive/30';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -97,11 +97,11 @@ export function AnalysisTracker({ analysisStatus }: AnalysisTrackerProps) {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Analysis Progress</h3>
-          <span className="text-2xl font-bold text-blue-600">{progressPercentage}%</span>
+          <span className="text-2xl font-bold text-primary tabular-nums">{progressPercentage}%</span>
         </div>
-        <div className="mt-3 h-2 w-full rounded-full bg-gray-200">
+        <div className="mt-3 h-2 w-full rounded-full bg-secondary">
           <div
-            className="h-full rounded-full bg-blue-600 transition-all duration-500"
+            className="h-full rounded-full bg-primary transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -123,8 +123,8 @@ export function AnalysisTracker({ analysisStatus }: AnalysisTrackerProps) {
                   <div
                     className={`h-12 w-1 ${
                       analysisStatus[index + 1].status === 'completed'
-                        ? 'bg-green-400'
-                        : 'bg-gray-300'
+                        ? 'bg-emerald-400'
+                        : 'bg-border'
                     }`}
                   />
                 )}

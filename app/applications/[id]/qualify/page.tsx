@@ -84,7 +84,7 @@ export default function QualifyPage() {
         <div>
           <Link
             href={`/applications/${appId}`}
-            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Application
@@ -103,7 +103,7 @@ export default function QualifyPage() {
         </div>
 
         {/* Pipeline stage banner */}
-        <Card className="flex items-start gap-3 border-amber-200 bg-amber-50 p-4">
+        <Card className="flex items-start gap-3 border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           <div>
             <p className="text-sm font-medium text-amber-900">

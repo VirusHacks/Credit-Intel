@@ -21,10 +21,10 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <MainNav />
-      <main className="space-y-8 p-6 sm:p-10">
+      <main className="mx-auto max-w-[1320px] space-y-8 px-6 py-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
           <p className="mt-2 text-muted-foreground">
             Manage your account preferences and notifications
           </p>
@@ -41,43 +41,43 @@ export default function SettingsPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">Full Name</label>
+              <label className="block text-sm font-medium text-foreground">Full Name</label>
               <input
                 type="text"
                 value={mockUser.name}
                 disabled
-                className="mt-1 w-full rounded-md border bg-muted px-3 py-2 disabled:opacity-50"
+                className="mt-1 w-full rounded-xl border bg-muted px-3 py-2 disabled:opacity-50"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium">Email Address</label>
+              <label className="block text-sm font-medium text-foreground">Email Address</label>
               <input
                 type="email"
                 value={mockUser.email}
                 disabled
-                className="mt-1 w-full rounded-md border bg-muted px-3 py-2 disabled:opacity-50"
+                className="mt-1 w-full rounded-xl border bg-muted px-3 py-2 disabled:opacity-50"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium">Role</label>
+              <label className="block text-sm font-medium text-foreground">Role</label>
               <select
                 value={mockUser.role}
                 disabled
-                className="mt-1 w-full rounded-md border bg-muted px-3 py-2 disabled:opacity-50"
+                className="mt-1 w-full rounded-xl border bg-muted px-3 py-2 disabled:opacity-50"
               >
                 <option>{mockUser.role}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium">Member Since</label>
+              <label className="block text-sm font-medium text-foreground">Member Since</label>
               <input
                 type="text"
                 value={mockUser.joinedAt.toLocaleDateString()}
                 disabled
-                className="mt-1 w-full rounded-md border bg-muted px-3 py-2 disabled:opacity-50"
+                className="mt-1 w-full rounded-xl border bg-muted px-3 py-2 disabled:opacity-50"
               />
             </div>
           </div>
@@ -185,9 +185,9 @@ export default function SettingsPage() {
           <h2 className="text-lg font-bold mb-6">Data Management</h2>
 
           <div className="space-y-4">
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-              <p className="font-medium text-yellow-900">Export Your Data</p>
-              <p className="mt-1 text-xs text-yellow-800">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+              <p className="font-medium text-amber-900 dark:text-amber-200">Export Your Data</p>
+              <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
                 Download all your application data as CSV or JSON
               </p>
               <div className="mt-3 flex gap-2">
@@ -200,12 +200,12 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-              <p className="font-medium text-red-900">Danger Zone</p>
-              <p className="mt-1 text-xs text-red-800">
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+              <p className="font-medium text-destructive">Danger Zone</p>
+              <p className="mt-1 text-xs text-destructive/80">
                 Permanently delete your account and all associated data
               </p>
-              <Button variant="outline" size="sm" className="mt-3 text-red-600">
+              <Button variant="outline" size="sm" className="mt-3 text-destructive border-destructive/30 hover:bg-destructive/5">
                 Delete Account
               </Button>
             </div>
@@ -216,7 +216,7 @@ export default function SettingsPage() {
         <div className="flex justify-end">
           <Button
             onClick={handleSave}
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
+            className="gap-2"
           >
             <Save className="h-4 w-4" />
             Save Changes

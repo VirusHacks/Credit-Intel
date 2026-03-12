@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/lib/stores/auth-store';
-import { AlertCircle, LogIn } from 'lucide-react';
+import { AlertCircle, LogIn, CreditCard } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,24 +33,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/[0.02] p-4">
+      <Card className="w-full max-w-md">
         <div className="p-8">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-blue-600 mb-2">Intelli-Credit</h1>
-            <p className="text-gray-600">AI-Powered Corporate Credit Appraisal</p>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <CreditCard className="h-6 w-6" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Credit Intel</h1>
+            <p className="text-sm text-muted-foreground mt-1">AI-Powered Corporate Credit Appraisal</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {(localError || error) && (
-              <div className="flex gap-2 items-start p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-red-700">{localError || error}</p>
+              <div className="flex gap-2 items-start p-3 bg-destructive/5 border border-destructive/20 rounded-xl">
+                <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-destructive">{localError || error}</p>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
                 Email Address
               </label>
               <Input
@@ -64,7 +67,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1.5">
                 Password
               </label>
               <Input
@@ -79,7 +82,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full"
               disabled={isLoading}
             >
               <LogIn className="w-4 h-4 mr-2" />
@@ -87,12 +90,12 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 text-center mb-4">Demo Credentials</p>
-            <div className="space-y-2 text-xs text-gray-500 bg-gray-50 p-3 rounded">
-              <p><strong>Admin:</strong> admin@gmail.com / password</p>
-              <p><strong>Analyst:</strong> analyst@gmail.com / password</p>
-              <p><strong>Viewer:</strong> viewer@gmail.com / password</p>
+          <div className="mt-8 pt-6 border-t">
+            <p className="text-sm text-muted-foreground text-center mb-3">Demo Credentials</p>
+            <div className="space-y-2 text-xs text-muted-foreground bg-secondary/50 p-3 rounded-xl">
+              <p><strong className="text-foreground">Admin:</strong> admin@gmail.com / password</p>
+              <p><strong className="text-foreground">Analyst:</strong> analyst@gmail.com / password</p>
+              <p><strong className="text-foreground">Viewer:</strong> viewer@gmail.com / password</p>
             </div>
           </div>
         </div>

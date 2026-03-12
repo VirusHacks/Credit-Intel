@@ -160,8 +160,8 @@ export function DocumentUploader({
         onDragLeave={() => setIsDragging(false)}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); setIsDragging(false); addFiles(Array.from(e.dataTransfer.files)); }}
-        className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${isDragging
-          ? 'border-blue-500 bg-blue-50'
+        className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors ${isDragging
+          ? 'border-primary bg-primary/5'
           : 'border-muted-foreground/25 hover:border-muted-foreground/50'
           }`}
       >
@@ -172,7 +172,7 @@ export function DocumentUploader({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="text-blue-600 hover:underline"
+            className="text-primary hover:underline"
           >
             click to select
           </button>
@@ -206,7 +206,7 @@ export function DocumentUploader({
                 size="sm"
                 onClick={uploadAll}
                 disabled={uploadingCount > 0}
-                className="gap-2 bg-blue-600 hover:bg-blue-700"
+                className="gap-2"
               >
                 {uploadingCount > 0 ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -222,23 +222,23 @@ export function DocumentUploader({
             {fileItems.map((item) => (
               <div
                 key={item.localId}
-                className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${item.status === 'error'
-                  ? 'border-red-200 bg-red-50'
+                className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${item.status === 'error'
+                  ? 'border-destructive/20 bg-destructive/5'
                   : item.status === 'done'
-                    ? 'border-green-200 bg-green-50'
+                    ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20'
                     : 'bg-card'
                   }`}
               >
                 {/* Status icon */}
                 <div className="shrink-0">
                   {item.status === 'uploading' && (
-                    <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   )}
                   {item.status === 'done' && (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
                   )}
                   {item.status === 'error' && (
-                    <AlertCircle className="h-5 w-5 text-red-500" />
+                    <AlertCircle className="h-5 w-5 text-destructive" />
                   )}
                   {item.status === 'pending' && (
                     <File className="h-5 w-5 text-muted-foreground" />
@@ -252,7 +252,7 @@ export function DocumentUploader({
                     {formatFileSize(item.file.size)}
                   </p>
                   {item.status === 'error' && (
-                    <p className="text-xs text-red-500">{item.errorMsg}</p>
+                    <p className="text-xs text-destructive">{item.errorMsg}</p>
                   )}
                 </div>
 

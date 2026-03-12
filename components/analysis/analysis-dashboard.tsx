@@ -165,7 +165,7 @@ function formatSignalValue(value: string | null): string {
 function ConfidenceBadge({ confidence }: { confidence: string | null }) {
     const val = confidence ? parseFloat(confidence) : 0;
     const pct = Math.round(val * 100);
-    const cls = pct >= 80 ? 'bg-green-100 text-green-700' : pct >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+    const cls = pct >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : pct >= 60 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-destructive/10 text-destructive';
     return (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
             {pct}%
@@ -176,10 +176,10 @@ function ConfidenceBadge({ confidence }: { confidence: string | null }) {
 function RatingBadge({ rating }: { rating: string | null }) {
     if (!rating) return null;
     const cls =
-        rating === 'Strong' ? 'bg-green-100 text-green-800' :
-            rating === 'Adequate' ? 'bg-blue-100 text-blue-800' :
-                rating === 'Weak' ? 'bg-amber-100 text-amber-800' :
-                    'bg-red-100 text-red-800';
+        rating === 'Strong' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' :
+            rating === 'Adequate' ? 'bg-primary/10 text-primary' :
+                rating === 'Weak' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
+                    'bg-destructive/10 text-destructive';
     return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{rating}</span>;
 }
 
@@ -214,7 +214,7 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
@@ -222,7 +222,7 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
     if (!data) {
         return (
             <Card className="p-12 text-center">
-                <XCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <XCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-muted-foreground">No analysis data available yet. Run the AI pipeline first.</p>
             </Card>
         );
@@ -270,8 +270,8 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                     <button key={s.id}
                         onClick={() => setExpandedSection(expandedSection === s.id ? null : s.id)}
                         className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all ${expandedSection === s.id
-                            ? 'bg-blue-600 text-white shadow-md'
-                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'bg-card border text-muted-foreground hover:bg-secondary/50 hover:border-border'
                             }`}>
                         {s.icon}
                         {s.label}

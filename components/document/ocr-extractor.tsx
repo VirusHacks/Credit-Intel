@@ -52,24 +52,24 @@ export function OCRExtractor({ documentName, onComplete }: OCRExtractorProps) {
   const allConfirmed = extractedFields.every((f) => f.isConfirmed);
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return 'text-green-600';
+    if (confidence >= 0.9) return 'text-emerald-600';
     if (confidence >= 0.75) return 'text-amber-600';
-    return 'text-red-600';
+    return 'text-destructive';
   };
 
   return (
     <Card className="p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">OCR Extraction Review</h3>
-        <p className="text-sm text-gray-600 mt-1">Document: {documentName}</p>
+        <h3 className="text-lg font-semibold text-foreground">OCR Extraction Review</h3>
+        <p className="text-sm text-muted-foreground mt-1">Document: {documentName}</p>
       </div>
 
       <div className="space-y-3 mb-6">
         {extractedFields.map((field, index) => (
-          <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <div key={index} className="flex items-center justify-between p-4 border rounded-xl hover:bg-secondary/50 transition">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <p className="font-medium text-gray-900">{field.label}</p>
+                <p className="font-medium text-foreground">{field.label}</p>
                 <span className={`text-xs font-semibold ${getConfidenceColor(field.confidence)}`}>
                   {(field.confidence * 100).toFixed(0)}% confident
                 </span>
@@ -80,11 +80,11 @@ export function OCRExtractor({ documentName, onComplete }: OCRExtractorProps) {
                   type="text"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-primary/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   autoFocus
                 />
               ) : (
-                <p className="text-gray-700">{field.value}</p>
+                <p className="text-muted-foreground">{field.value}</p>
               )}
             </div>
 
@@ -93,7 +93,7 @@ export function OCRExtractor({ documentName, onComplete }: OCRExtractorProps) {
                 <Button
                   size="sm"
                   onClick={() => handleSaveEdit(index)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className=""
                 >
                   Save
                 </Button>
@@ -111,7 +111,7 @@ export function OCRExtractor({ documentName, onComplete }: OCRExtractorProps) {
                     size="sm"
                     variant={field.isConfirmed ? 'default' : 'outline'}
                     onClick={() => handleConfirm(index)}
-                    className={field.isConfirmed ? 'bg-green-600 hover:bg-green-700' : ''}
+                    className={field.isConfirmed ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
                   >
                     {field.isConfirmed ? (
                       <>
@@ -130,7 +130,7 @@ export function OCRExtractor({ documentName, onComplete }: OCRExtractorProps) {
       </div>
 
       {!allConfirmed && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl mb-6 dark:bg-amber-950/20 dark:border-amber-800">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-amber-900">Please confirm all fields</p>
@@ -142,9 +142,9 @@ export function OCRExtractor({ documentName, onComplete }: OCRExtractorProps) {
       )}
 
       {allConfirmed && (
-        <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg mb-6">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-700">All fields confirmed and ready for analysis</p>
+        <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl mb-6 dark:bg-emerald-950/20 dark:border-emerald-800">
+          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-emerald-700 dark:text-emerald-300">All fields confirmed and ready for analysis</p>
         </div>
       )}
 
@@ -152,7 +152,7 @@ export function OCRExtractor({ documentName, onComplete }: OCRExtractorProps) {
         <Button
           onClick={() => onComplete?.(extractedFields)}
           disabled={!allConfirmed}
-          className="flex-1 bg-blue-600 hover:bg-blue-700"
+          className="flex-1"
         >
           Complete Review
         </Button>

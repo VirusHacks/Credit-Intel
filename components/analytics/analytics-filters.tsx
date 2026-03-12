@@ -38,7 +38,7 @@ export function AnalyticsFilters() {
     <Card className="p-4 mb-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">Filters</h3>
+          <h3 className="font-semibold text-foreground">Filters</h3>
           <Button
             variant="outline"
             size="sm"
@@ -53,13 +53,13 @@ export function AnalyticsFilters() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Status Filter */}
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-2">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
               Application Status
             </label>
             <select
               value={filterStatus || ''}
               onChange={(e) => setFilterStatus(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
             >
               <option value="">All Statuses</option>
               {statuses.map((status) => (
@@ -73,13 +73,13 @@ export function AnalyticsFilters() {
 
           {/* Industry Filter */}
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-2">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
               Industry
             </label>
             <select
               value={filterIndustry || ''}
               onChange={(e) => setFilterIndustry(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
             >
               <option value="">All Industries</option>
               {industries.map((industry) => (
@@ -92,7 +92,7 @@ export function AnalyticsFilters() {
 
           {/* Start Date */}
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-2">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
               <Calendar className="w-3.5 h-3.5 inline mr-1" />
               From Date
             </label>
@@ -101,13 +101,13 @@ export function AnalyticsFilters() {
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               onBlur={handleDateRangeChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
             />
           </div>
 
           {/* End Date */}
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-2">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
               <Calendar className="w-3.5 h-3.5 inline mr-1" />
               To Date
             </label>
@@ -116,7 +116,7 @@ export function AnalyticsFilters() {
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               onBlur={handleDateRangeChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
             />
           </div>
         </div>
