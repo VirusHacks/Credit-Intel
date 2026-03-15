@@ -241,6 +241,8 @@ export const camOutputs = pgTable('cam_outputs', {
   thinkingTrace: text('thinking_trace'),  // DeepSeek-R1 <think> chain
   // Bayesian Decision Engine output (JSON blob)
   bayesianJson: jsonb('bayesian_json'),
+  // SWOT Analysis (JSON blob: { strengths, weaknesses, opportunities, threats })
+  swotJson: jsonb('swot_json'),
   // PDF
   pdfBlobUrl: varchar('pdf_blob_url', { length: 500 }),
   generatedAt: timestamp('generated_at').defaultNow().notNull(),

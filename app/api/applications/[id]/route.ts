@@ -81,6 +81,7 @@ export async function GET(
       conditions: camOutputs.conditions,
       thinkingTrace: camOutputs.thinkingTrace,
       bayesianJson: camOutputs.bayesianJson,
+      swotJson: camOutputs.swotJson,
       pdfBlobUrl: camOutputs.pdfBlobUrl,
       generatedAt: camOutputs.generatedAt,
     })

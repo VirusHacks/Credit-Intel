@@ -30,7 +30,20 @@ const STAGE_ORDER = [
   'cam_generator',
 ] as const;
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// ─── Phase grouping for human-readable progress ────────────────────────────────────
+const PHASES = [
+  { id: 'reading', label: 'Reading Documents', icon: FileText, stages: ['ingest'] },
+  { id: 'analysis', label: 'Running Checks', icon: Search, stages: ['bank_statement', 'gst_analyzer', 'itr_balancesheet', 'cibil_cmr', 'scout'] },
+  { id: 'deciding', label: 'AI Decision', icon: Scale, stages: ['qualitative_gate', 'reconciler', 'cam_generator'] },
+];
+
+// ─── Props ──────────────────────────────────────────────────────────────────────────────
+interface DecisionSummary {
+  overallScore: number;
+  decisionBand: 'APPROVE' | 'CONDITIONAL_APPROVE' | 'REJECT';
+  conflictCount: number;
+}
+
 interface AgentActivityFeedProps {
   /** Real application UUID; if omitted, shows demo/static data */
   appId?: string;
@@ -39,9 +52,11 @@ interface AgentActivityFeedProps {
    * When 'complete', we skip live SSE and show all stages as completed.
    */
   pipelineStatus?: string;
+  /** Optional: shows a result summary card when pipeline is complete */
+  decisionSummary?: DecisionSummary;
 }
 
-export function AgentActivityFeed({ appId, pipelineStatus }: AgentActivityFeedProps) {
+export function AgentActivityFeed({ appId, pipelineStatus, decisionSummary }: AgentActivityFeedProps) {
   const [events, setEvents] = useState<Map<string, PipelineEvent>>(new Map());
   const [thinkStream, setThinkStream] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -222,7 +237,7 @@ export function AgentActivityFeed({ appId, pipelineStatus }: AgentActivityFeedPr
       {/* ── Interactive React Flow diagram ────────────────────────────────── */}
       <PipelineFlow stages={stages} />
 
-      {/* ── Live AI reasoning trace ──────────────────────────────────────── */}
+      {/* ── How the AI reached its conclusion ────────────────────────────── */}
       {thinkStream && (
         <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-5">
           <h3 className="font-semibold text-white text-sm mb-3 flex items-center gap-2">

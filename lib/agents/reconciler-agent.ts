@@ -158,7 +158,7 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
   const result = parseReconcilerJSON(jsonText, discrepancies);
 
   // ── 9. Persist to cam_outputs ────────────────────────────────────────────────
-  const { fiveCsScores: fcs, recommendation: rec } = result;
+  const { fiveCsScores: fcs, recommendation: rec, swot } = result;
 
   const safeScore = (v: unknown): number => {
     const n = typeof v === 'number' ? v : parseInt(String(v), 10);
@@ -211,6 +211,8 @@ export async function runReconciler(appId: string): Promise<ReconcilerOutput> {
     thinkingTrace,
     // Bayesian Decision Engine
     bayesianJson: bayesianDecision as unknown as Record<string, unknown>,
+    // SWOT Analysis
+    swotJson: swot as unknown as Record<string, unknown> | null,
   });
 
   // ── 10. Update application pipeline status ──────────────────────────────────
@@ -336,11 +338,20 @@ After your thinking, output ONLY a JSON object (no markdown fences) in this EXAC
   "recommendedRatePercent": "<e.g. 13.5%>",
   "originalAsk": "<repeat the requested amount>",
   "reductionRationale": "<explain any reduction from original ask, or omit if full amount>",
-  "conditions": ["<condition 1>", "<condition 2>"]
+  "conditions": ["<condition 1>", "<condition 2>"],
+  "swot": {
+    "strengths": ["<internal positive factor>", "<internal positive factor>"],
+    "weaknesses": ["<internal negative factor>", "<internal negative factor>"],
+    "opportunities": ["<external positive factor>", "<external positive factor>"],
+    "threats": ["<external risk>", "<external risk>"]
+  }
 }
 
 Rules:
 - Scores are 0–100 (100 = perfect). Weight red flags heavily.
+- swot.strengths and swot.weaknesses must be internal/company-specific factors derived from the financial signals.
+- swot.opportunities and swot.threats must be external/macro factors from research findings and industry context.
+- Each SWOT list must have 3–5 concise, specific bullet points (not generic statements).
 - REJECT if CMR ≥ 9 or ≥2 RED_FLAG discrepancies or confirmed fraud signals.
 - CONDITIONAL_APPROVE for 1 RED_FLAG or CMR 7–8 or DSCR between 1.0–1.2.
 - APPROVE only if all checks PASS and no fraud signals.
@@ -359,10 +370,17 @@ function stripThinkingBlocks(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 }
 
+export interface SwotAnalysis {
+  strengths: string[];
+  weaknesses: string[];
+  opportunities: string[];
+  threats: string[];
+}
+
 function parseReconcilerJSON(
   jsonText: string,
   discrepancies: DiscrepancyResult[],
-): { fiveCsScores: FiveCsScores; recommendation: LoanRecommendation } {
+): { fiveCsScores: FiveCsScores; recommendation: LoanRecommendation; swot: SwotAnalysis | null } {
   // Strip markdown fences if model leaked them
   const cleaned = jsonText
     .replace(/^```(?:json)?\s*/i, '')
@@ -388,12 +406,23 @@ function parseReconcilerJSON(
     conditions: (parsed.conditions as string[]) ?? [],
   };
 
-  return { fiveCsScores: fcs, recommendation };
+  const rawSwot = parsed.swot as Record<string, string[]> | undefined;
+  const swot: SwotAnalysis | null = rawSwot
+    ? {
+        strengths: rawSwot.strengths ?? [],
+        weaknesses: rawSwot.weaknesses ?? [],
+        opportunities: rawSwot.opportunities ?? [],
+        threats: rawSwot.threats ?? [],
+      }
+    : null;
+
+  return { fiveCsScores: fcs, recommendation, swot };
 }
 
 function buildFallback(discrepancies: DiscrepancyResult[]): {
   fiveCsScores: FiveCsScores;
   recommendation: LoanRecommendation;
+  swot: SwotAnalysis | null;
 } {
   const hasRedFlag = discrepancies.some((d) => d.verdict === 'RED_FLAG');
   const defaultScore = hasRedFlag ? 35 : 50;
@@ -416,7 +445,7 @@ function buildFallback(discrepancies: DiscrepancyResult[]): {
     conditions: ['Manual credit officer review required before disbursement.'],
   };
 
-  return { fiveCsScores, recommendation };
+  return { fiveCsScores, recommendation, swot: null };
 }
 
 // ─── Money/Rate parsers for DB storage ────────────────────────────────────────
