@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Brain } from 'lucide-react';
+import { CheckCircle2, Brain, FileText, Search, Scale } from 'lucide-react';
 import { PipelineFlow, type StageInfo, type StageStatus } from './pipeline-flow';
 
 // ─── Live event type from /api/pipeline/status/[id] SSE ──────────────────────
