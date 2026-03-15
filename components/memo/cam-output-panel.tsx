@@ -54,8 +54,10 @@ function ScoreRing({ score, size = 80 }: { score: number | null; size?: number }
   const radius = (size - 12) / 2;
   const circumference = 2 * Math.PI * radius;
   const filled = (s / 100) * circumference;
-  const color = s >= 70 ? '#16a34a' : s >= 50 ? '#d97706' : '#dc2626';
-  const trackColor = s >= 70 ? '#dcfce7' : s >= 50 ? '#fef3c7' : '#fee2e2';
+  
+  // Monochromatic variants based on score range
+  const color = s >= 70 ? 'rgba(255, 255, 255, 0.9)' : s >= 50 ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.2)';
+  const trackColor = 'rgba(255, 255, 255, 0.05)';
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
@@ -82,16 +84,16 @@ const C_META = [
 ] as const;
 
 function ratingColor(rating: string | null) {
-  if (!rating) return 'bg-gray-100 text-gray-500 border-gray-200';
-  if (rating === 'Strong') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (rating === 'Adequate') return 'bg-blue-50 text-blue-700 border-blue-200';
-  if (rating === 'Weak') return 'bg-amber-50 text-amber-700 border-amber-200';
-  return 'bg-red-50 text-red-700 border-red-200';
+  if (!rating) return 'bg-white/5 text-white/40 border-white/5';
+  if (rating === 'Strong') return 'bg-white/20 text-white border-white/30 font-black';
+  if (rating === 'Adequate') return 'bg-white/10 text-white/70 border-white/20 font-bold';
+  if (rating === 'Weak') return 'bg-white/5 text-white/40 border-white/10 font-medium';
+  return 'bg-white/[0.02] text-white/20 border-white/5';
 }
 
 function scoreTextColor(s: number | null) {
   const v = s ?? 0;
-  return v >= 70 ? 'text-green-600' : v >= 50 ? 'text-amber-600' : 'text-red-600';
+  return v >= 70 ? 'text-white' : v >= 50 ? 'text-white/60' : 'text-white/30';
 }
 
 function FiveCCard({
@@ -105,15 +107,15 @@ function FiveCCard({
   const [open, setOpen] = useState(false);
   const Icon = meta.icon;
   const s = score ?? 0;
-  const iconBg = s >= 70 ? 'bg-green-100 text-green-600' : s >= 50 ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600';
+  const iconBg = s >= 70 ? 'bg-white/20 text-white border border-white/20' : s >= 50 ? 'bg-white/10 text-white/60 border border-white/10' : 'bg-white/5 text-white/30 border border-white/5';
 
   return (
     <div
-      className="rounded-xl border bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+      className="rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl overflow-hidden hover:bg-white/[0.05] transition-all cursor-pointer group"
       onClick={() => setOpen((o) => !o)}
     >
       {/* Top strip: thin colour bar */}
-      <div className={`h-1 w-full ${s >= 70 ? 'bg-green-500' : s >= 50 ? 'bg-amber-400' : 'bg-red-500'}`} />
+      <div className={`h-1 w-full ${s >= 70 ? 'bg-white/40' : s >= 50 ? 'bg-white/10' : 'bg-white/5'}`} />
 
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
@@ -172,74 +174,66 @@ function FiveCCard({
 const SWOT_META = [
   {
     key: 'strengths' as const,
-    label: 'Strengths',
-    subtitle: 'Internal advantages',
+    label: 'ASSETS',
+    subtitle: 'Internal Strengths',
     icon: ThumbsUp,
-    accent: '#16a34a',
-    gradFrom: 'from-emerald-500',
-    gradTo: 'to-teal-400',
-    bg: 'bg-emerald-50',
-    cardBorder: 'border-emerald-200',
-    numBg: 'bg-emerald-600',
-    itemHover: 'hover:bg-emerald-100/60',
-    tagBg: 'bg-emerald-100',
-    tagText: 'text-emerald-700',
-    tagBorder: 'border-emerald-200',
-    textColor: 'text-emerald-950',
-    quadrant: 'SW', // top-left
+    accent: 'rgba(255,255,255,0.4)',
+    bg: 'bg-white/[0.03]',
+    cardBorder: 'border-white/20',
+    numBg: 'bg-white/20',
+    itemHover: 'hover:bg-white/[0.08]',
+    tagBg: 'bg-white/10',
+    tagText: 'text-white',
+    tagBorder: 'border-white/20',
+    textColor: 'text-white',
+    quadrant: 'SW',
   },
   {
     key: 'weaknesses' as const,
-    label: 'Weaknesses',
-    subtitle: 'Internal vulnerabilities',
+    label: 'RISKS',
+    subtitle: 'Internal Gaps',
     icon: ThumbsDown,
-    accent: '#dc2626',
-    gradFrom: 'from-red-500',
-    gradTo: 'to-rose-400',
-    bg: 'bg-red-50',
-    cardBorder: 'border-red-200',
-    numBg: 'bg-red-600',
-    itemHover: 'hover:bg-red-100/60',
-    tagBg: 'bg-red-100',
-    tagText: 'text-red-700',
-    tagBorder: 'border-red-200',
-    textColor: 'text-red-950',
+    accent: 'rgba(255,255,255,0.2)',
+    bg: 'bg-white/[0.02]',
+    cardBorder: 'border-white/10',
+    numBg: 'bg-white/10',
+    itemHover: 'hover:bg-white/[0.05]',
+    tagBg: 'bg-white/5',
+    tagText: 'text-white/60',
+    tagBorder: 'border-white/10',
+    textColor: 'text-white/80',
     quadrant: 'NE',
   },
   {
     key: 'opportunities' as const,
-    label: 'Opportunities',
-    subtitle: 'External tailwinds',
+    label: 'UPSIDE',
+    subtitle: 'Market Tailwinds',
     icon: Zap,
-    accent: '#2563eb',
-    gradFrom: 'from-blue-500',
-    gradTo: 'to-indigo-400',
-    bg: 'bg-blue-50',
-    cardBorder: 'border-blue-200',
-    numBg: 'bg-blue-600',
-    itemHover: 'hover:bg-blue-100/60',
-    tagBg: 'bg-blue-100',
-    tagText: 'text-blue-700',
-    tagBorder: 'border-blue-200',
-    textColor: 'text-blue-950',
+    accent: 'rgba(255,255,255,0.3)',
+    bg: 'bg-white/[0.04]',
+    cardBorder: 'border-white/20',
+    numBg: 'bg-white/30',
+    itemHover: 'hover:bg-white/[0.1]',
+    tagBg: 'bg-white/15',
+    tagText: 'text-white/90',
+    tagBorder: 'border-white/30',
+    textColor: 'text-white',
     quadrant: 'SW',
   },
   {
     key: 'threats' as const,
-    label: 'Threats',
-    subtitle: 'External headwinds',
+    label: 'THREATS',
+    subtitle: 'Macro Headwinds',
     icon: ShieldAlert,
-    accent: '#d97706',
-    gradFrom: 'from-amber-500',
-    gradTo: 'to-orange-400',
-    bg: 'bg-amber-50',
-    cardBorder: 'border-amber-200',
-    numBg: 'bg-amber-600',
-    itemHover: 'hover:bg-amber-100/60',
-    tagBg: 'bg-amber-100',
-    tagText: 'text-amber-700',
-    tagBorder: 'border-amber-200',
-    textColor: 'text-amber-950',
+    accent: 'rgba(255,255,255,0.1)',
+    bg: 'bg-white/[0.01]',
+    cardBorder: 'border-white/5',
+    numBg: 'bg-white/5',
+    itemHover: 'hover:bg-white/[0.03]',
+    tagBg: 'bg-white/[0.02]',
+    tagText: 'text-white/40',
+    tagBorder: 'border-white/5',
+    textColor: 'text-white/50',
     quadrant: 'NE',
   },
 ] as const;
@@ -271,51 +265,47 @@ function SwotPanel({ swot }: { swot: NonNullable<LatestCam['swotJson']> }) {
   const negativeCount = swot.weaknesses.length + swot.threats.length;
   const total = positiveCount + negativeCount;
   const posPercent = total > 0 ? Math.round((positiveCount / total) * 100) : 50;
-  const sentiment = posPercent >= 70 ? 'Favourable' : posPercent >= 50 ? 'Balanced' : 'Cautionary';
-  const sentimentColor = posPercent >= 70 ? 'text-emerald-600' : posPercent >= 50 ? 'text-amber-600' : 'text-red-600';
-  const sentimentBg = posPercent >= 70 ? 'bg-emerald-50 border-emerald-200' : posPercent >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+  const sentiment = posPercent >= 70 ? 'Optimal' : posPercent >= 50 ? 'Stable' : 'Vulnerable';
+  const sentimentColor = posPercent >= 70 ? 'text-white' : posPercent >= 50 ? 'text-white/70' : 'text-white/40';
+  const sentimentBg = posPercent >= 70 ? 'bg-white/10 border-white/20' : posPercent >= 50 ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5';
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
 
       {/* ── Header ── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-6 py-5">
-        {/* decorative blobs */}
-        <div className="pointer-events-none absolute -top-8 -left-8 h-32 w-32 rounded-full bg-indigo-500/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-8 -right-8 h-32 w-32 rounded-full bg-purple-500/10 blur-2xl" />
-
-        <div className="relative flex items-start justify-between gap-4 flex-wrap">
+      <div className="relative overflow-hidden bg-white/5 backdrop-blur-3xl px-6 py-8 border-b border-white/10">
+        <div className="relative flex items-center justify-between gap-6 flex-wrap">
           <div>
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="rounded-lg bg-white/10 p-1.5">
-                <Brain className="h-4 w-4 text-white" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="rounded-xl bg-white/10 p-2 shadow-2xl border border-white/10">
+                <Brain className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-white/60">Strategic Assessment</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Strategic Risk Matrix</span>
             </div>
-            <h3 className="text-xl font-extrabold text-white leading-tight">SWOT Analysis</h3>
-            <p className="text-xs text-white/50 mt-0.5">AI-synthesised from financial signals &amp; market research</p>
+            <h3 className="text-2xl font-black text-white leading-tight tracking-tight uppercase">Decision Support SWOT</h3>
+            <p className="text-[11px] text-white/30 font-bold uppercase tracking-widest mt-1">AI-synthesised multi-agent research</p>
           </div>
 
           {/* Sentiment badge */}
-          <div className={`rounded-xl border px-3 py-2 ${sentimentBg} text-center`}>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Overall Sentiment</p>
-            <p className={`text-lg font-extrabold ${sentimentColor}`}>{sentiment}</p>
-            <p className="text-[10px] text-gray-400">{posPercent}% positive signals</p>
+          <div className={`rounded-2xl border shadow-2xl px-6 py-3 ${sentimentBg} text-center backdrop-blur-xl`}>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-1">Risk Vector</p>
+            <p className={`text-xl font-black uppercase tracking-widest ${sentimentColor}`}>{sentiment}</p>
+            <p className="text-[10px] text-white/30 font-bold mt-1 tabular-nums">{posPercent}% POSITIVE</p>
           </div>
         </div>
 
         {/* Balance bar */}
-        <div className="relative mt-4 space-y-1.5">
-          <div className="flex justify-between text-[10px] text-white/50 font-medium">
-            <span>Strengths + Opportunities ({positiveCount})</span>
-            <span>Weaknesses + Threats ({negativeCount})</span>
+        <div className="relative mt-8 space-y-2">
+          <div className="flex justify-between text-[9px] text-white/20 font-black uppercase tracking-widest">
+            <span>Positive Assets ({positiveCount})</span>
+            <span>Risk Headwinds ({negativeCount})</span>
           </div>
-          <div className="h-2 rounded-full bg-white/10 overflow-hidden flex">
+          <div className="h-2.5 rounded-full bg-white/5 border border-white/5 overflow-hidden flex shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full transition-all duration-1000"
+              className="h-full bg-white/40 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(255,255,255,0.2)]"
               style={{ width: `${posPercent}%` }}
             />
-            <div className="flex-1 bg-gradient-to-r from-red-400 to-rose-400" />
+            <div className="flex-1 bg-white/5" />
           </div>
         </div>
       </div>
@@ -335,7 +325,7 @@ function SwotPanel({ swot }: { swot: NonNullable<LatestCam['swotJson']> }) {
       {/* ── 2×2 Quadrant grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2">
         {SWOT_META.map((meta, idx) => {
-          const { key, label, subtitle, icon: Icon, accent, gradFrom, gradTo,
+          const { key, label, subtitle, icon: Icon, accent,
             bg, cardBorder, numBg, itemHover, tagBg, tagText, tagBorder, textColor } = meta;
           const items = swot[key];
           const isActive = activeKey === key;
@@ -358,8 +348,11 @@ function SwotPanel({ swot }: { swot: NonNullable<LatestCam['swotJson']> }) {
                 onClick={() => setActiveKey(isActive ? null : key)}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`rounded-xl bg-gradient-to-br ${gradFrom} ${gradTo} p-2.5 shadow-sm`}>
-                    <Icon className="h-4 w-4 text-white" />
+                  <div 
+                    className="rounded-2xl p-3 shadow-2xl border border-white/20 backdrop-blur-xl"
+                    style={{ backgroundColor: accent }}
+                  >
+                    <Icon className="h-5 w-5 text-white" />
                   </div>
                   <div>
                     <p className="font-extrabold text-gray-900 text-sm leading-tight">{label}</p>
@@ -422,14 +415,14 @@ function SwotPanel({ swot }: { swot: NonNullable<LatestCam['swotJson']> }) {
 // ─── Verdict badge ────────────────────────────────────────────────────────────
 function VerdictIcon({ decision }: { decision: string }) {
   if (decision === 'APPROVE') return <CheckCircle2 className="h-10 w-10 text-white" />;
-  if (decision === 'CONDITIONAL_APPROVE') return <AlertTriangle className="h-10 w-10 text-white" />;
-  return <XCircle className="h-10 w-10 text-white" />;
+  if (decision === 'CONDITIONAL_APPROVE') return <AlertTriangle className="h-10 w-10 text-white/70" />;
+  return <XCircle className="h-10 w-10 text-white/40" />;
 }
 
 function verdictGrad(decision: string) {
-  if (decision === 'APPROVE') return 'from-emerald-600 to-teal-500';
-  if (decision === 'CONDITIONAL_APPROVE') return 'from-amber-500 to-orange-400';
-  return 'from-red-600 to-rose-500';
+  if (decision === 'APPROVE') return 'from-white/20 to-white/10';
+  if (decision === 'CONDITIONAL_APPROVE') return 'from-white/10 to-white/5';
+  return 'from-white/5 to-transparent';
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -481,66 +474,68 @@ export function CamOutputPanel({
       {/* ═══════════════════════════════════════════════════════════════════
           TOP STRIP: Verdict + overall score ring + key metrics
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className={`rounded-2xl bg-linear-to-r ${verdictGrad(cam.decision)} p-px shadow-lg`}>
-        <div className="rounded-2xl bg-white">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-3xl shadow-2xl overflow-hidden group hover:bg-white/[0.04] transition-all">
+        <div className="relative">
           {/* Header */}
-          <div className={`rounded-t-2xl bg-linear-to-r ${verdictGrad(cam.decision)} px-6 py-5 flex items-center justify-between gap-4 flex-wrap`}>
-            <div className="flex items-center gap-4">
-              <VerdictIcon decision={cam.decision} />
-              <div className="text-white">
-                <p className="text-xs font-medium opacity-80 uppercase tracking-wider">Credit Decision</p>
-                <p className="text-3xl font-extrabold leading-tight">{cam.decision.replace(/_/g, ' ')}</p>
+          <div className={`bg-gradient-to-br ${verdictGrad(cam.decision)} px-8 py-8 flex items-center justify-between gap-6 flex-wrap border-b border-white/10`}>
+            <div className="flex items-center gap-6">
+              <div className="rounded-2xl bg-white/10 p-4 border border-white/20 shadow-2xl backdrop-blur-xl">
+                <VerdictIcon decision={cam.decision} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em]">Neural Verification Status</p>
+                <p className="text-4xl font-black leading-tight tracking-tighter uppercase mt-1">{cam.decision.replace(/_/g, ' ')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
               {/* overall score ring */}
-              <div className="relative flex items-center justify-center bg-white/20 rounded-full" style={{ width: 72, height: 72 }}>
-                <ScoreRing score={overallScore} size={72} />
+              <div className="relative flex items-center justify-center bg-white/5 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl group-hover:scale-105 transition-transform" style={{ width: 84, height: 84 }}>
+                <ScoreRing score={overallScore} size={84} />
                 <div className="absolute text-center">
-                  <p className="text-lg font-extrabold text-white leading-none">{overallScore ?? '—'}</p>
-                  <p className="text-[9px] text-white/70 leading-none">avg</p>
+                  <p className="text-2xl font-black text-white leading-none tabular-nums">{overallScore ?? '—'}</p>
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-1">RANK</p>
                 </div>
               </div>
               <a href={`/api/cam/download/${appId}`} target="_blank" rel="noreferrer">
-                <Button variant="secondary" size="sm" className="gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30">
+                <Button variant="outline" size="lg" className="gap-3 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-xl font-black uppercase text-[10px] tracking-widest">
                   <Download className="h-4 w-4" />
-                  Download PDF
+                  GENERATE PDF
                 </Button>
               </a>
             </div>
           </div>
 
           {/* Metrics row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-100">
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/5 bg-white/[0.01]">
             {[
               {
-                label: 'Recommended',
+                label: 'Recommended Exposure',
                 value: cam.recommendedAmountInr && Number(cam.recommendedAmountInr) > 0
                   ? `₹${Number(cam.recommendedAmountInr).toLocaleString('en-IN')}`
                   : '—',
-                color: 'text-emerald-700',
+                color: 'text-white',
               },
               {
-                label: 'Interest Rate',
+                label: 'Optimized Rate',
                 value: cam.recommendedRatePercent && Number(cam.recommendedRatePercent) > 0
                   ? `${cam.recommendedRatePercent}% p.a.`
                   : '—',
-                color: 'text-blue-700',
+                color: 'text-white/80',
               },
               {
-                label: 'Original Ask',
+                label: 'Applicant Request',
                 value: requestedAmountInr ? `₹${Number(requestedAmountInr).toLocaleString('en-IN')}` : '—',
-                color: 'text-gray-700',
+                color: 'text-white/60',
               },
               {
-                label: 'Generated',
+                label: 'Inference Timestamp',
                 value: new Date(cam.generatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
-                color: 'text-gray-500',
+                color: 'text-white/40',
               },
             ].map(({ label, value, color }) => (
-              <div key={label} className="px-5 py-4 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
-                <p className={`mt-1 text-base font-bold ${color}`}>{value}</p>
+              <div key={label} className="px-6 py-6 text-center">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20">{label}</p>
+                <p className={`mt-2 text-base font-black tracking-tight ${color}`}>{value}</p>
               </div>
             ))}
           </div>
@@ -551,11 +546,13 @@ export function CamOutputPanel({
           REDUCTION RATIONALE (if present)
       ═══════════════════════════════════════════════ */}
       {cam.reductionRationale && (
-        <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
-          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+        <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-6 py-5 shadow-2xl">
+          <AlertTriangle className="h-6 w-6 text-white/40 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-amber-800">Rationale</p>
-            <p className="text-sm text-amber-900 mt-0.5 leading-relaxed">{cam.reductionRationale}</p>
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Decision Rationale</p>
+            <p className="text-sm text-white/80 leading-relaxed font-medium italic">
+              &quot;{cam.reductionRationale}&quot;
+            </p>
           </div>
         </div>
       )}
@@ -584,14 +581,14 @@ export function CamOutputPanel({
 
           {/* Loan conditions */}
           {cam.conditions && (cam.conditions as string[]).length > 0 && (
-            <div className="rounded-xl border bg-white shadow-sm p-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
-                Covenants &amp; Conditions
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl p-6 group hover:bg-white/[0.05] transition-all shadow-2xl">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-5">
+                Structural Covenants
               </p>
-              <ul className="space-y-2">
+              <ul className="space-y-4">
                 {(cam.conditions as string[]).map((cond, i) => (
-                  <li key={i} className="flex gap-2.5 text-sm text-gray-700">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                  <li key={i} className="flex gap-3 text-[13px] text-white/70 font-medium leading-relaxed">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-white/20" />
                     {cond}
                   </li>
                 ))}
@@ -600,23 +597,23 @@ export function CamOutputPanel({
           )}
 
           {/* AI Chat */}
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden flex flex-col" style={{ minHeight: 380 }}>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-3xl shadow-2xl overflow-hidden flex flex-col group hover:bg-white/[0.04] transition-all" style={{ minHeight: 420 }}>
             {/* Header */}
-            <div className="flex items-center gap-2.5 bg-indigo-600 px-4 py-3">
-              <div className="rounded-full bg-white/20 p-1.5">
+            <div className="flex items-center gap-3 bg-white/5 px-5 py-4 border-b border-white/10">
+              <div className="rounded-xl bg-white/10 p-2 shadow-2xl border border-white/10">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white leading-none">Ask AI</p>
-                <p className="text-[10px] text-white/70 mt-0.5">Credit analysis assistant</p>
+                <p className="text-sm font-black text-white uppercase tracking-wider leading-none">Neural Reconciler</p>
+                <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest mt-1">Real-time analysis stream</p>
               </div>
             </div>
 
             {/* Quick questions */}
-            <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+            <div className="flex flex-wrap gap-2 px-4 pt-4">
               {QUICK_Q.map((q) => (
                 <button key={q} onClick={() => setChatInput(q)}
-                  className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 transition-colors">
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black text-white/40 hover:bg-white/10 hover:text-white transition-all uppercase tracking-widest">
                   {q}
                 </button>
               ))}
@@ -651,18 +648,18 @@ export function CamOutputPanel({
             </div>
 
             {/* Input */}
-            <div className="flex gap-2 border-t px-3 py-2.5">
+            <div className="flex gap-3 border-t border-white/10 px-4 py-4 bg-white/5">
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleChatSend(); } }}
-                placeholder="Ask a question…"
-                className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                placeholder="Query neural patterns..."
+                className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all font-medium"
               />
               <Button onClick={() => void handleChatSend()} disabled={chatLoading || !chatInput.trim()}
-                size="sm" className="bg-indigo-600 hover:bg-indigo-700 rounded-lg px-3">
-                <Send className="h-3.5 w-3.5" />
+                size="sm" className="bg-white text-black hover:bg-white/90 rounded-xl px-4 font-black">
+                <Send className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -673,23 +670,23 @@ export function CamOutputPanel({
           AI REASONING TRACE (collapsible)
       ═════════════════════════════════════════════ */}
       {cam.thinkingTrace && (
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.01] backdrop-blur-xl overflow-hidden shadow-2xl hover:bg-white/[0.03] transition-all">
           <button
             onClick={() => setShowTrace((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-between px-6 py-5"
           >
-            <div className="flex items-center gap-2.5">
-              <Brain className="h-5 w-5 text-purple-600" />
-              <span className="font-semibold text-gray-900 text-sm">AI Reasoning Trace</span>
-              <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
-                {cam.thinkingTrace.length.toLocaleString()} chars
+            <div className="flex items-center gap-4">
+              <Brain className="h-5 w-5 text-white/30" />
+              <span className="font-black text-white/70 text-xs uppercase tracking-[0.2em]">Neural Reasoning Core Trace</span>
+              <span className="rounded-lg bg-white/10 px-2 py-1 text-[9px] font-black text-white/40 border border-white/10 uppercase tracking-widest">
+                {cam.thinkingTrace.length.toLocaleString()} SHARDS
               </span>
             </div>
-            {showTrace ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+            {showTrace ? <ChevronUp className="h-4 w-4 text-white/20" /> : <ChevronDown className="h-4 w-4 text-white/20" />}
           </button>
           {showTrace && (
-            <div className="border-t bg-gray-50/60 px-5 py-4">
-              <pre className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed font-mono max-h-120 overflow-y-auto">
+            <div className="border-t border-white/10 bg-black/40 px-6 py-6 font-mono">
+              <pre className="text-[11px] text-white/40 whitespace-pre-wrap leading-relaxed max-h-120 overflow-y-auto font-medium scrollbar-hide">
                 {cam.thinkingTrace}
               </pre>
             </div>

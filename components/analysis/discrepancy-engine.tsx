@@ -274,24 +274,24 @@ function getDefaultChecks(): DiscrepancyCheck[] {
 function VerdictBadge({ verdict }: { verdict: 'PASS' | 'FLAG' | 'RED_FLAG' }) {
     if (verdict === 'RED_FLAG') {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
-                <ShieldAlert className="h-3.5 w-3.5" />
-                RED FLAG
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1 text-[10px] font-black text-white border border-white/20 shadow-sm">
+                <ShieldAlert className="h-3.5 w-3.5 opacity-80" />
+                CRITICAL FLAG
             </span>
         );
     }
     if (verdict === 'FLAG') {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                FLAG
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1 text-[10px] font-black text-white/70 border border-white/10">
+                <AlertTriangle className="h-3.5 w-3.5 opacity-50" />
+                DIVERGENCE
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            PASS
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.02] px-3 py-1 text-[10px] font-black text-white/30 border border-white/5">
+            <CheckCircle2 className="h-3.5 w-3.5 opacity-20" />
+            VERIFIED
         </span>
     );
 }
@@ -307,104 +307,113 @@ export function DiscrepancyEngine({ checks }: DiscrepancyEngineProps) {
     const passes = checks.filter(c => c.verdict === 'PASS').length;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {/* Summary header */}
-            <div className="grid grid-cols-3 gap-3">
-                <Card className="p-3 text-center border-green-200 bg-green-50/50">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold text-green-600">{passes}</p>
-                    <p className="text-xs text-green-700">Passed</p>
-                </Card>
-                <Card className="p-3 text-center border-amber-200 bg-amber-50/50">
-                    <AlertTriangle className="h-5 w-5 text-amber-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold text-amber-600">{flags}</p>
-                    <p className="text-xs text-amber-700">Flagged</p>
-                </Card>
-                <Card className="p-3 text-center border-red-200 bg-red-50/50">
-                    <ShieldAlert className="h-5 w-5 text-red-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold text-red-600">{redFlags}</p>
-                    <p className="text-xs text-red-700">Red Flags</p>
-                </Card>
+            <div className="grid grid-cols-3 gap-4">
+                <div className="p-6 text-center rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-xl group hover:bg-white/[0.05] transition-all">
+                    <CheckCircle2 className="h-6 w-6 text-white/20 mx-auto mb-2" />
+                    <p className="text-3xl font-black text-white/20 tabular-nums">{passes}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/10 mt-1">Consistency Confirmed</p>
+                </div>
+                <div className="p-6 text-center rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl group hover:bg-white/[0.06] transition-all shadow-2xl">
+                    <AlertTriangle className="h-6 w-6 text-white/60 mx-auto mb-2" />
+                    <p className="text-3xl font-black text-white/70 tabular-nums">{flags}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mt-1">Anomalies Flagged</p>
+                </div>
+                <div className="p-6 text-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-xl group hover:bg-white/10 transition-all shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+                    <ShieldAlert className="h-6 w-6 text-white mx-auto mb-2 animate-pulse" />
+                    <p className="text-3xl font-black text-white tabular-nums">{redFlags}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mt-1">Critical Divergence</p>
+                </div>
             </div>
 
             {/* Checks table */}
-            <Card className="overflow-hidden">
-                <div className="px-5 py-3 bg-gray-50 border-b flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-gray-600" />
-                    <p className="font-bold text-gray-800">Cross-Document Discrepancy Checks ({checks.length})</p>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl overflow-hidden shadow-2xl">
+                <div className="px-6 py-5 border-b border-white/10 flex items-center gap-3 bg-white/5">
+                    <Activity className="h-5 w-5 text-white/40" />
+                    <p className="font-black text-white/80 uppercase tracking-[0.2em] text-xs">Cross-Document Verification Engine</p>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-gray-50/50 border-b">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Check</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Sources</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Threshold</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Actual</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Verdict</th>
+                        <thead>
+                            <tr className="bg-white/5 border-b border-white/10">
+                                <th className="px-6 py-4 text-left text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Check Parameter</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Data Sources</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Divergence Threshold</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Observed Value</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">System Verdict</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-white/5">
                             {checks.map(check => (
-                                <tr key={check.id} className={`hover:bg-gray-50 ${check.verdict === 'RED_FLAG' ? 'bg-red-50/30' : check.verdict === 'FLAG' ? 'bg-amber-50/30' : ''}`}>
-                                    <td className="px-4 py-3">
-                                        <p className="font-medium text-gray-900">{check.checkName}</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">{check.description}</p>
+                                <tr key={check.id} className={`hover:bg-white/[0.04] transition-colors ${check.verdict === 'RED_FLAG' ? 'bg-white/[0.03]' : ''}`}>
+                                    <td className="px-6 py-5">
+                                        <p className="font-black text-white uppercase tracking-tight text-xs">{check.checkName}</p>
+                                        <p className="text-[11px] text-white/40 font-medium mt-1 leading-relaxed max-w-xs">{check.description}</p>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-1 text-xs text-gray-600">
-                                            <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700">{check.source1}</span>
-                                            <ArrowRight className="h-3 w-3" />
-                                            <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700">{check.source2}</span>
+                                    <td className="px-6 py-5">
+                                        <div className="flex items-center gap-2">
+                                            <span className="rounded-md bg-white/10 border border-white/10 px-2 py-1 text-[9px] font-black text-white/60 uppercase tracking-widest">{check.source1}</span>
+                                            <ArrowRight className="h-3 w-3 text-white/20" />
+                                            <span className="rounded-md bg-white/10 border border-white/10 px-2 py-1 text-[9px] font-black text-white/60 uppercase tracking-widest">{check.source2}</span>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-xs text-gray-600">{check.threshold}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`text-xs font-medium ${check.verdict === 'RED_FLAG' ? 'text-red-700' : check.verdict === 'FLAG' ? 'text-amber-700' : 'text-green-700'}`}>
+                                    <td className="px-6 py-5 text-[10px] font-black text-white/30 uppercase tracking-widest">{check.threshold}</td>
+                                    <td className="px-6 py-5">
+                                        <span className={`text-xs font-black tabular-nums tracking-widest ${check.verdict === 'RED_FLAG' ? 'text-white underline underline-offset-4 decoration-white/40' : check.verdict === 'FLAG' ? 'text-white/70' : 'text-white/20'}`}>
                                             {check.actualValue}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3"><VerdictBadge verdict={check.verdict} /></td>
+                                    <td className="px-6 py-5"><VerdictBadge verdict={check.verdict} /></td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
-            </Card>
+            </div>
 
             {/* Expanded detail cards for flagged items */}
             {checks.filter(c => c.verdict !== 'PASS').length > 0 && (
-                <div className="space-y-3">
-                    <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                        <ShieldAlert className="h-4 w-4 text-red-500" />
-                        Flagged Items — Detail
+                <div className="space-y-4">
+                    <p className="text-[10px] font-black text-white/40 flex items-center gap-2 uppercase tracking-[0.3em]">
+                        <ShieldAlert className="h-4 w-4 text-white/20" />
+                        Flagged Intelligence — High Resolution Detail
                     </p>
-                    {checks
-                        .filter(c => c.verdict !== 'PASS')
-                        .sort((a, b) => (a.verdict === 'RED_FLAG' ? -1 : 1) - (b.verdict === 'RED_FLAG' ? -1 : 1))
-                        .map(check => (
-                            <Card key={check.id} className={`p-4 border-l-4 ${check.verdict === 'RED_FLAG' ? 'border-l-red-500 bg-red-50/30' : 'border-l-amber-400 bg-amber-50/30'}`}>
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="font-medium text-gray-900">{check.checkName}</p>
-                                            <VerdictBadge verdict={check.verdict} />
-                                        </div>
-                                        <p className="text-sm text-gray-700 leading-relaxed">{check.detail}</p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">{check.source1}</span>
-                                            <TrendingUp className="h-3 w-3 text-gray-400" />
-                                            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">{check.source2}</span>
-                                            {check.confidence > 0 && (
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${check.confidence >= 0.8 ? 'bg-green-100 text-green-700' : check.confidence >= 0.6 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {Math.round(check.confidence * 100)}% confidence
-                                                </span>
-                                            )}
+                    <div className="grid grid-cols-1 gap-4">
+                        {checks
+                            .filter(c => c.verdict !== 'PASS')
+                            .sort((a, b) => (a.verdict === 'RED_FLAG' ? -1 : 1) - (b.verdict === 'RED_FLAG' ? -1 : 1))
+                            .map(check => (
+                                <div key={check.id} className={`p-6 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all hover:bg-white/[0.08] ${check.verdict === 'RED_FLAG' ? 'border-white/20 bg-white/5' : 'border-white/10 bg-white/[0.02]'}`}>
+                                    <div className="flex items-start justify-between gap-6">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <p className="font-black text-white uppercase tracking-wider text-sm">{check.checkName}</p>
+                                                <VerdictBadge verdict={check.verdict} />
+                                            </div>
+                                            <p className="text-sm text-white/70 leading-relaxed font-medium mb-6 bg-white/5 p-4 rounded-xl border border-white/5 italic">
+                                                &quot;{check.detail}&quot;
+                                            </p>
+                                            <div className="flex items-center gap-4 flex-wrap">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="rounded-md bg-white/10 border border-white/10 px-2 py-1 text-[9px] font-black text-white/60 uppercase tracking-widest">{check.source1}</span>
+                                                    <Activity className="h-3 w-3 text-white/20" />
+                                                    <span className="rounded-md bg-white/10 border border-white/10 px-2 py-1 text-[9px] font-black text-white/60 uppercase tracking-widest">{check.source2}</span>
+                                                </div>
+                                                {check.confidence > 0 && (
+                                                    <div className="flex items-center gap-2 border-l border-white/10 pl-4 ml-2">
+                                                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Confidence Score</span>
+                                                        <span className={`rounded-lg px-2.5 py-1 text-[10px] font-black border tabular-nums ${check.confidence >= 0.8 ? 'bg-white/10 text-white border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : check.confidence >= 0.6 ? 'bg-white/5 text-white/60 border-white/10' : 'bg-white/[0.02] text-white/30 border-white/5'}`}>
+                                                            {Math.round(check.confidence * 100)}%
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </Card>
-                        ))}
+                            ))}
+                    </div>
                 </div>
             )}
         </div>

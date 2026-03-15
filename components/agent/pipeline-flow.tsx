@@ -15,6 +15,7 @@ import {
   MarkerType,
   applyNodeChanges,
   applyEdgeChanges,
+  MiniMap,
 } from "@xyflow/react";
 // @ts-ignore - Valid import, just missing type declaration
 import "@xyflow/react/dist/style.css";
@@ -137,10 +138,10 @@ function confLabel(
 ): { text: string; color: string; bg: string } | null {
   if (confidence <= 0) return null;
   if (confidence >= 0.85)
-    return { text: "✓ Clear data", color: "#15803d", bg: "#dcfce7" };
+    return { text: "✓ HIGH FIDELITY", color: "#fff", bg: "rgba(255,255,255,0.2)" };
   if (confidence >= 0.65)
-    return { text: "~ Minor gaps", color: "#92400e", bg: "#fef3c7" };
-  return { text: "! Verify manually", color: "#b91c1c", bg: "#fee2e2" };
+    return { text: "~ PARTIAL", color: "rgba(255,255,255,0.6)", bg: "rgba(255,255,255,0.1)" };
+  return { text: "! LOW CONFIDENCE", color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.05)" };
 }
 
 // ─── Custom node ──────────────────────────────────────────────────────────────
@@ -264,20 +265,18 @@ function PipelineNode({ data }: NodeProps) {
           {confPct && (
             <span
               style={{
-                fontSize: 10,
-                fontWeight: 600,
-                background:
-                  d.status === "completed"
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(255,255,255,0.15)",
-                color:
-                  d.status === "completed" ? "rgba(255,255,255,0.7)" : "#fff",
+                fontSize: 9,
+                fontWeight: 800,
+                background: d.status === "completed" ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.2)",
+                color: d.status === "completed" ? "rgba(255,255,255,0.4)" : "#fff",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 4,
-                padding: "1px 5px",
+                padding: "1px 6px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
               }}
             >
-              {cl.text}
+              {confLabel(d.confidence)?.text || confPct}
             </span>
           )}
           {d.timestamp && (
@@ -439,9 +438,9 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
   const hasActive = stages.some((s) => s.status === "in-progress");
 
   return (
-    <div className="rounded-xl border border-[#222222] bg-[#0A0A0A] shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-3xl shadow-2xl overflow-hidden group">
       {/* Legend bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[#222222] bg-[#111111]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
         <div className="flex items-center gap-5 text-xs text-white/60">
           <span className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-white/60 inline-block border border-white/20" />{" "}
@@ -484,7 +483,7 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
           proOptions={{ hideAttribution: true }}
           panOnDrag
           zoomOnScroll
-          className="bg-[#0A0A0A]"
+          className="bg-transparent"
         >
           <Background color="#222222" gap={20} size={1} />
           <Controls
@@ -494,16 +493,17 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
           <MiniMap
             nodeColor={(n) => {
               const d = n.data as PipelineNodeData;
-              if (d.status === "completed") return "rgba(255,255,255,0.3)";
-              if (d.status === "in-progress") return "#ffffff";
-              if (d.status === "failed") return "rgba(255,255,255,0.5)";
-              return "#222222";
+              if (d.status === "completed") return "rgba(255,255,255,0.2)";
+              if (d.status === "in-progress") return "rgba(255,255,255,0.8)";
+              if (d.status === "failed") return "rgba(255,255,255,0.4)";
+              return "rgba(255,255,255,0.05)";
             }}
-            maskColor="rgba(0, 0, 0, 0.7)"
+            maskColor="rgba(0, 0, 0, 0.8)"
             style={{
-              background: "#111111",
-              border: "1px solid #222222",
-              borderRadius: 8,
+              background: "rgba(20, 20, 20, 0.9)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 12,
+              backdropFilter: "blur(10px)",
             }}
           />
         </ReactFlow>

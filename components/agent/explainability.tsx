@@ -78,34 +78,45 @@ export function Explainability({ cam, agentCount = 5, signalCount = 0, avgConfid
   return (
     <div className="space-y-6">
       {/* Summary Card */}
-      <Card className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
-        <div className="flex items-start gap-4">
-          <Brain className="w-8 h-8 text-indigo-600 flex-shrink-0 mt-1" />
+      <Card className="p-8 bg-white/5 backdrop-blur-2xl border-white/10 relative overflow-hidden ring-1 ring-white/5">
+        <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
+          <Brain className="w-32 h-32 text-white" />
+        </div>
+        <div className="flex items-start gap-6 relative z-10">
+          <div className="p-3 bg-white text-black rounded-xl">
+             <Brain className="w-6 h-6" />
+          </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Decision Explanation</h3>
-            <p className="text-sm text-gray-700 mb-4">
+            <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] mb-3">AI Decision Transparency</h3>
+            <p className="text-xs text-white/50 mb-8 leading-relaxed max-w-2xl">
               {cam
-                ? `The AI reconciler analyzed ${signalCount} data points from ${agentCount} specialized agents to produce this credit assessment. Each of the Five C's is scored independently with transparent reasoning.`
+                ? `The neural reconciler synthesized ${signalCount} high-fidelity signals from ${agentCount} specialized intelligence agents. Each of the Five C's is analyzed using cross-document contrastive scoring.`
                 : 'Run the AI pipeline and generate a CAM to see the explainability breakdown.'}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                <p className="text-xs text-gray-600">Overall Score</p>
-                <p className={`text-xl font-bold mt-1 ${(overallScore ?? 0) >= 65 ? 'text-green-600' : (overallScore ?? 0) >= 45 ? 'text-amber-600' : 'text-red-600'}`}>
-                  {overallScore ?? '—'}<span className="text-xs font-normal text-gray-500">/100</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Aggregate Score</p>
+                <p className="text-2xl font-black text-white mt-1 tabular-nums">
+                  {overallScore ?? '—'}<span className="text-xs font-normal text-white/20">/100</span>
                 </p>
               </div>
-              <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                <p className="text-xs text-gray-600">Supporting C&apos;s</p>
-                <p className="text-xl font-bold text-green-600 mt-1">{positiveFactors}</p>
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Supporting Factors</p>
+                <div className="flex items-center gap-2 mt-1">
+                   <p className="text-2xl font-black text-white tabular-nums">{positiveFactors}</p>
+                   <span className="text-[10px] text-white/40 font-bold uppercase tracking-tighter">IDENTIFIED</span>
+                </div>
               </div>
-              <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                <p className="text-xs text-gray-600">Weak C&apos;s</p>
-                <p className="text-xl font-bold text-red-600 mt-1">{negativeFactors}</p>
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Risk Vectors</p>
+                <div className="flex items-center gap-2 mt-1">
+                   <p className={`text-2xl font-black tabular-nums ${negativeFactors > 0 ? 'text-white underline underline-offset-4 decoration-white/30' : 'text-white/20'}`}>{negativeFactors}</p>
+                   <span className="text-[10px] text-white/40 font-bold uppercase tracking-tighter">{negativeFactors === 1 ? 'FACTOR' : 'FACTORS'}</span>
+                </div>
               </div>
-              <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                <p className="text-xs text-gray-600">Avg Confidence</p>
-                <p className="text-xl font-bold text-blue-600 mt-1">{avgConfidence > 0 ? `${Math.round(avgConfidence * 100)}%` : '—'}</p>
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Model Confidence</p>
+                <p className="text-2xl font-black text-white mt-1 tabular-nums">{avgConfidence > 0 ? `${avgConfidence}%` : '—'}</p>
               </div>
             </div>
           </div>
@@ -113,62 +124,62 @@ export function Explainability({ cam, agentCount = 5, signalCount = 0, avgConfid
       </Card>
 
       {/* Five C's Factor Analysis */}
-      <div className="space-y-3">
-        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-amber-600" />
-          Five C&apos;s Contrastive Scoring
+      <div className="space-y-4">
+        <h3 className="text-[10px] font-black text-white/40 flex items-center gap-2 uppercase tracking-[0.3em]">
+          <Lightbulb className="w-4 h-4 text-white/40" />
+          Multi-Agent Contrastive Insights
         </h3>
 
         {factors.map(factor => {
           const isExpanded = expandedKey === factor.key;
-          const borderColor = factor.impact === 'positive' ? 'border-l-green-600' : factor.impact === 'negative' ? 'border-l-red-600' : 'border-l-gray-400';
-          const scoreColor = factor.impact === 'positive' ? 'text-green-600' : factor.impact === 'negative' ? 'text-red-600' : 'text-gray-600';
-          const ratingCls = factor.rating === 'Strong' ? 'bg-green-100 text-green-700' : factor.rating === 'Adequate' ? 'bg-blue-100 text-blue-700' : factor.rating === 'Weak' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+          const borderColor = factor.impact === 'positive' ? 'border-l-white' : factor.impact === 'negative' ? 'border-l-white/20' : 'border-l-white/10';
+          const scoreColor = factor.impact === 'positive' ? 'text-white' : factor.impact === 'negative' ? 'text-white/40' : 'text-white/60';
+          const ratingCls = factor.rating === 'Strong' ? 'bg-white text-black font-black' : factor.rating === 'Adequate' ? 'bg-white/20 text-white font-bold' : factor.rating === 'Weak' ? 'bg-white/10 text-white/60 font-semibold' : 'bg-white/5 text-white/30 border border-white/5';
 
           return (
             <Card
               key={factor.key}
-              className={`p-4 cursor-pointer transition-all hover:shadow-md border-l-4 ${borderColor} ${isExpanded ? 'ring-2 ring-blue-200' : ''}`}
+              className={`p-6 bg-white/5 backdrop-blur-xl cursor-pointer transition-all hover:bg-white/10 border-l-4 ${borderColor} ${isExpanded ? 'border-white/40 bg-white/10' : 'border-white/10'}`}
               onClick={() => setExpandedKey(isExpanded ? null : factor.key)}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className={`rounded-lg p-2 ${factor.impact === 'positive' ? 'bg-green-100 text-green-600' : factor.impact === 'negative' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className={`rounded-lg p-2.5 border border-white/10 ${factor.impact === 'positive' ? 'bg-white/20 text-white' : factor.impact === 'negative' ? 'bg-white/5 text-white/30' : 'bg-white/10 text-white/60'}`}>
                     {factor.icon}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">{factor.label}</p>
-                      {factor.rating && <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ratingCls}`}>{factor.rating}</span>}
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-black text-white uppercase tracking-wider">{factor.label}</p>
+                      {factor.rating && <span className={`rounded px-1.5 py-0.5 text-[9px] uppercase tracking-tighter ${ratingCls}`}>{factor.rating}</span>}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{factor.desc}</p>
+                    <p className="text-[11px] text-white/40 mt-1 uppercase font-bold tracking-tight">{factor.desc}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-6 flex-shrink-0">
                   <div className="text-right">
-                    <p className={`text-2xl font-bold ${scoreColor}`}>
+                    <p className={`text-3xl font-black tabular-nums ${scoreColor}`}>
                       {factor.score ?? '—'}
-                      <span className="text-xs font-normal text-gray-500">/100</span>
+                      <span className="text-xs font-normal text-white/20 ml-0.5">/100</span>
                     </p>
-                    <p className="text-[10px] text-gray-400 uppercase">Weight: {factor.weight}</p>
+                    <p className="text-[9px] text-white/30 font-black uppercase tracking-widest mt-1">Weighting: {factor.weight}</p>
                   </div>
-                  {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                  {isExpanded ? <ChevronUp className="w-5 h-5 text-white/40" /> : <ChevronDown className="w-5 h-5 text-white/40" />}
                 </div>
               </div>
 
               {/* Expanded: AI Explanation */}
               {isExpanded && (
-                <div className="mt-4 pt-4 border-t border-gray-200" onClick={e => e.stopPropagation()}>
+                <div className="mt-6 pt-6 border-t border-white/10" onClick={e => e.stopPropagation()}>
                   {factor.explanation ? (
-                    <div className="flex gap-2 items-start">
-                      <Brain className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-lg">
+                      <Brain className="h-5 w-5 text-white/40 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs font-semibold text-purple-800 mb-1">AI Reasoning</p>
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{factor.explanation}</p>
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest mb-2 italic">Neural Reasoning Output</p>
+                        <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap font-medium">{factor.explanation}</p>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground italic">No detailed explanation available. Generate a CAM to see AI reasoning.</p>
+                    <p className="text-xs text-white/30 italic uppercase tracking-widest text-center py-4">Detailed synthesis pending CAM generation</p>
                   )}
                 </div>
               )}
@@ -178,38 +189,38 @@ export function Explainability({ cam, agentCount = 5, signalCount = 0, avgConfid
       </div>
 
       {/* Model Information */}
-      <Card className="p-6 bg-gray-50 border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Cpu className="w-5 h-5 text-gray-600" />
-          Intelligence Stack
+      <Card className="p-8 bg-white/5 backdrop-blur-xl border border-white/10">
+        <h3 className="text-[10px] font-black text-white/40 mb-6 flex items-center gap-2 uppercase tracking-[0.3em]">
+          <Cpu className="w-4 h-4" />
+          Neural Infrastructure
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-            <Sparkles className="h-5 w-5 text-blue-500" />
+          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 group hover:bg-white/10 transition-colors">
+            <Sparkles className="h-5 w-5 text-white/40 group-hover:text-white transition-colors" />
             <div>
-              <p className="text-gray-600 text-xs">Reconciler Model</p>
-              <p className="font-medium text-gray-900">Gemini 2.5 Flash (1M ctx)</p>
+              <p className="text-white/30 text-[9px] font-extrabold uppercase tracking-widest">Inference Core</p>
+              <p className="font-bold text-white text-xs uppercase tracking-tight">Gemini 2.5 Flash</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-            <Layers className="h-5 w-5 text-purple-500" />
+          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 group hover:bg-white/10 transition-colors">
+            <Layers className="h-5 w-5 text-white/40 group-hover:text-white transition-colors" />
             <div>
-              <p className="text-gray-600 text-xs">Agent Framework</p>
-              <p className="font-medium text-gray-900">LangGraph + 5 Parallel Agents</p>
+              <p className="text-white/30 text-[9px] font-extrabold uppercase tracking-widest">Agent Orchestration</p>
+              <p className="font-bold text-white text-xs uppercase tracking-tight">LangGraph Synthesis</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-            <Brain className="h-5 w-5 text-green-500" />
+          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 group hover:bg-white/10 transition-colors">
+            <Brain className="h-5 w-5 text-white/40 group-hover:text-white transition-colors" />
             <div>
-              <p className="text-gray-600 text-xs">Memory Layer</p>
-              <p className="font-medium text-gray-900">mem0 Cloud (Promoter DNA)</p>
+              <p className="text-white/30 text-[9px] font-extrabold uppercase tracking-widest">Persistent Memory</p>
+              <p className="font-bold text-white text-xs uppercase tracking-tight">mem0 Hive Intelligence</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-            <Shield className="h-5 w-5 text-amber-500" />
+          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 group hover:bg-white/10 transition-colors">
+            <Shield className="h-5 w-5 text-white/40 group-hover:text-white transition-colors" />
             <div>
-              <p className="text-gray-600 text-xs">Reasoning</p>
-              <p className="font-medium text-gray-900">Chain-of-Thought + Contrastive</p>
+              <p className="text-white/30 text-[9px] font-extrabold uppercase tracking-widest">Verification Logic</p>
+              <p className="font-bold text-white text-xs uppercase tracking-tight">Contrastive Proofing</p>
             </div>
           </div>
         </div>

@@ -7,7 +7,7 @@ import {
     AlertTriangle, CheckCircle2, XCircle, FileText, Search,
     Brain, ChevronDown, ChevronUp, ExternalLink, Loader2,
     BarChart3, Eye, TrendingDown, Activity, Users,
-    BadgeAlert, ShieldCheck, Info, Zap,
+    BadgeAlert, ShieldCheck, Info, Zap, Clock
 } from 'lucide-react';
 import { DiscrepancyEngine, computeDiscrepancies } from './discrepancy-engine';
 import { Explainability } from '@/components/agent/explainability';
@@ -119,12 +119,12 @@ interface AnalysisData {
 }
 
 // ─── Agent metadata ────────────────────────────────────────────────────────
-const AGENT_META: Record<string, { label: string; icon: React.ReactNode; color: string; desc: string }> = {
-    bank_statement: { label: 'Bank Statement Analysis', icon: <Landmark className="h-5 w-5" />, color: 'blue', desc: 'Cash flows, credits, debits, average balance, bounced cheques' },
-    gst_analyzer: { label: 'GST Returns Analysis', icon: <BarChart3 className="h-5 w-5" />, color: 'green', desc: 'Revenue trends, GSTR-3B vs 2A reconciliation, ITC analysis' },
-    itr_balancesheet: { label: 'ITR & Balance Sheet', icon: <TrendingUp className="h-5 w-5" />, color: 'purple', desc: 'P&L metrics, net worth, DSCR, debt-equity ratio' },
-    cibil_cmr: { label: 'CIBIL / CMR Score', icon: <Shield className="h-5 w-5" />, color: 'orange', desc: 'Credit score, payment history, existing borrowings' },
-    scout: { label: 'OSINT Research', icon: <Search className="h-5 w-5" />, color: 'red', desc: 'Court cases, MCA records, news, ratings, fraud signals' },
+const AGENT_META: Record<string, { label: string; icon: React.ReactNode; desc: string }> = {
+    bank_statement: { label: 'Bank Statement Analysis', icon: <Landmark className="h-5 w-5" />, desc: 'Cash flows, credits, debits, average balance, bounced cheques' },
+    gst_analyzer: { label: 'GST Returns Analysis', icon: <BarChart3 className="h-5 w-5" />, desc: 'Revenue trends, GSTR-3B vs 2A reconciliation, ITC analysis' },
+    itr_balancesheet: { label: 'ITR & Balance Sheet', icon: <TrendingUp className="h-5 w-5" />, desc: 'P&L metrics, net worth, DSCR, debt-equity ratio' },
+    cibil_cmr: { label: 'CIBIL / CMR Score', icon: <Shield className="h-5 w-5" />, desc: 'Credit score, payment history, existing borrowings' },
+    scout: { label: 'OSINT Research', icon: <Search className="h-5 w-5" />, desc: 'Court cases, MCA records, news, ratings, fraud signals' },
 };
 
 const RESEARCH_TYPE_LABELS: Record<string, string> = {
@@ -165,9 +165,11 @@ function formatSignalValue(value: string | null): string {
 function ConfidenceBadge({ confidence }: { confidence: string | null }) {
     const val = confidence ? parseFloat(confidence) : 0;
     const pct = Math.round(val * 100);
-    const cls = pct >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : pct >= 60 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-destructive/10 text-destructive';
+    // Monochromatic: weight and opacity based on value
+    const weight = pct >= 80 ? 'font-bold' : pct >= 60 ? 'font-semibold' : 'font-medium';
+    const opacity = pct >= 80 ? 'bg-white/20 text-white' : pct >= 60 ? 'bg-white/10 text-white/80' : 'bg-white/5 text-white/60';
     return (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] ${weight} ${opacity} border border-white/10 uppercase`}>
             {pct}%
         </span>
     );
@@ -176,11 +178,11 @@ function ConfidenceBadge({ confidence }: { confidence: string | null }) {
 function RatingBadge({ rating }: { rating: string | null }) {
     if (!rating) return null;
     const cls =
-        rating === 'Strong' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' :
-            rating === 'Adequate' ? 'bg-primary/10 text-primary' :
-                rating === 'Weak' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
-                    'bg-destructive/10 text-destructive';
-    return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{rating}</span>;
+        rating === 'Strong' ? 'bg-white/20 text-white font-bold' :
+            rating === 'Adequate' ? 'bg-white/10 text-white/90 font-semibold text-xs' :
+                rating === 'Weak' ? 'bg-white/5 text-white/70 font-medium text-[11px]' :
+                    'bg-white/5 text-white/50 border border-white/10 text-[10px]';
+    return <span className={`rounded-full px-2.5 py-0.5 ${cls} uppercase tracking-tight`}>{rating}</span>;
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────
@@ -214,7 +216,7 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader2 className="h-8 w-8 animate-spin text-white/20" />
             </div>
         );
     }
@@ -236,15 +238,7 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
         ? Object.values(signalsByAgent).flat().reduce((s, sig) => s + (sig.confidence ? parseFloat(sig.confidence) : 0), 0) / totalSignals
         : 0;
 
-    // Key financial metrics extraction
-    function findSignal(key: string): string | null {
-        for (const sigs of Object.values(signalsByAgent)) {
-            const found = sigs.find(s => s.signalKey === key);
-            if (found) return found.signalValue;
-        }
-        return null;
-    }
-
+    // avgConfidence is naturally 0..1 from the agents
     const overallScore = cam
         ? Math.round(((cam.characterScore ?? 0) + (cam.capacityScore ?? 0) + (cam.capitalScore ?? 0) + (cam.collateralScore ?? 0) + (cam.conditionsScore ?? 0)) / 5)
         : null;
@@ -269,9 +263,9 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                 {sections.map(s => (
                     <button key={s.id}
                         onClick={() => setExpandedSection(expandedSection === s.id ? null : s.id)}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all ${expandedSection === s.id
-                            ? 'bg-primary text-primary-foreground shadow-md'
-                            : 'bg-card border text-muted-foreground hover:bg-secondary/50 hover:border-border'
+                        className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all backdrop-blur-md ${expandedSection === s.id
+                            ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                            : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/20'
                             }`}>
                         {s.icon}
                         {s.label}
@@ -287,43 +281,45 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
 
                     {/* Top-level stats */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <Card className="p-4 text-center">
-                            <p className="text-xs font-medium text-muted-foreground uppercase">Overall Score</p>
-                            <p className={`text-3xl font-bold mt-1 ${(overallScore ?? 0) >= 70 ? 'text-green-600' : (overallScore ?? 0) >= 50 ? 'text-amber-600' : 'text-red-600'
-                                }`}>
+                        <Card className="p-4 text-center bg-white/5 backdrop-blur-xl border-white/10">
+                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Overall Score</p>
+                            <p className={`text-4xl font-bold mt-2 tabular-nums ${
+                                (overallScore ?? 0) >= 70 ? 'text-white' : (overallScore ?? 0) >= 50 ? 'text-white/80' : 'text-white/60 font-black'
+                            }`}>
                                 {overallScore ?? '—'}
-                                <span className="text-sm font-normal text-muted-foreground">/100</span>
+                                <span className="text-xs font-normal text-white/30 ml-0.5">/100</span>
                             </p>
                         </Card>
-                        <Card className="p-4 text-center">
-                            <p className="text-xs font-medium text-muted-foreground uppercase">Data Points</p>
-                            <p className="text-3xl font-bold mt-1 text-blue-600">{totalSignals}</p>
-                            <p className="text-xs text-muted-foreground">Across {Object.keys(signalsByAgent).length} agents</p>
+                        <Card className="p-4 text-center bg-white/5 backdrop-blur-xl border-white/10">
+                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Data Points</p>
+                            <p className="text-4xl font-bold mt-2 text-white tabular-nums">{totalSignals}</p>
+                            <p className="text-[10px] text-white/30 mt-1 uppercase">Across {Object.keys(signalsByAgent).length} agents</p>
                         </Card>
-                        <Card className="p-4 text-center">
-                            <p className="text-xs font-medium text-muted-foreground uppercase">Avg Confidence</p>
-                            <p className={`text-3xl font-bold mt-1 ${avgConfidence >= 0.8 ? 'text-green-600' : avgConfidence >= 0.6 ? 'text-amber-600' : 'text-red-600'
-                                }`}>
+                        <Card className="p-4 text-center bg-white/5 backdrop-blur-xl border-white/10">
+                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Avg Confidence</p>
+                            <p className={`text-4xl font-bold mt-2 tabular-nums ${avgConfidence >= 0.8 ? 'text-white' : avgConfidence >= 0.6 ? 'text-white/80' : 'text-white/60'}`}>
                                 {Math.round(avgConfidence * 100)}%
                             </p>
                         </Card>
-                        <Card className="p-4 text-center">
-                            <p className="text-xs font-medium text-muted-foreground uppercase">Fraud Alerts</p>
-                            <p className={`text-3xl font-bold mt-1 ${fraudFindings.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                {fraudFindings.length}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{generalFindings.length} research items</p>
+                        <Card className="p-4 text-center bg-white/5 backdrop-blur-xl border-white/10">
+                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Fraud Alerts</p>
+                            <div className="flex flex-col items-center">
+                                <p className={`text-4xl font-bold mt-2 tabular-nums ${fraudFindings.length > 0 ? 'text-white ring-1 ring-white/20 px-2 rounded' : 'text-white/20'}`}>
+                                    {fraudFindings.length}
+                                </p>
+                                <p className="text-[10px] text-white/30 mt-1 uppercase">{generalFindings.length} research findings</p>
+                            </div>
                         </Card>
                     </div>
 
                     {/* 5Cs visual summary */}
                     {cam && (
-                        <Card className="p-6">
-                            <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <BarChart3 className="h-5 w-5 text-blue-600" />
-                                Credit Quality at a Glance
+                        <Card className="p-6 bg-white/5 backdrop-blur-xl border-white/10">
+                            <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4 text-white/60" />
+                                Credit Quality Index
                             </h3>
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 {([
                                     { key: 'character', icon: <Shield className="h-4 w-4" />, label: 'Character' },
                                     { key: 'capacity', icon: <TrendingUp className="h-4 w-4" />, label: 'Capacity' },
@@ -333,21 +329,21 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                                 ] as const).map(({ key, icon, label }) => {
                                     const score = cam[`${key}Score` as keyof CamData] as number | null;
                                     const rating = cam[`${key}Rating` as keyof CamData] as string | null;
-                                    const barColor = (score ?? 0) >= 70 ? 'bg-green-500' : (score ?? 0) >= 50 ? 'bg-amber-500' : 'bg-red-500';
+                                    const barOpacity = (score ?? 0) >= 70 ? 'bg-white' : (score ?? 0) >= 50 ? 'bg-white/60' : 'bg-white/30';
                                     return (
-                                        <div key={key} className="flex items-center gap-4">
-                                            <div className="flex items-center gap-2 w-28 flex-shrink-0">
-                                                {icon}
-                                                <span className="text-sm font-medium text-gray-700">{label}</span>
+                                        <div key={key} className="flex items-center gap-6">
+                                            <div className="flex items-center gap-3 w-32 flex-shrink-0">
+                                                <div className="text-white/40">{icon}</div>
+                                                <span className="text-[11px] font-bold text-white/80 uppercase tracking-tight">{label}</span>
                                             </div>
                                             <div className="flex-1">
-                                                <div className="h-3 w-full rounded-full bg-gray-100">
-                                                    <div className={`h-3 rounded-full ${barColor} transition-all duration-700`}
+                                                <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+                                                    <div className={`h-full rounded-full ${barOpacity} transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,255,255,0.1)]`}
                                                         style={{ width: `${score ?? 0}%` }} />
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2 w-24 justify-end flex-shrink-0">
-                                                <span className="text-sm font-bold text-gray-900">{score ?? '—'}</span>
+                                            <div className="flex items-center gap-4 w-32 justify-end flex-shrink-0">
+                                                <span className="text-sm font-bold text-white tabular-nums">{score ?? '—'}</span>
                                                 <RatingBadge rating={rating} />
                                             </div>
                                         </div>
@@ -358,12 +354,12 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                     )}
 
                     {/* Transparency notice */}
-                    <Card className="p-4 border-l-4 border-l-blue-500 bg-blue-50/50">
-                        <div className="flex gap-3">
-                            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <Card className="p-4 border border-white/10 bg-white/5 backdrop-blur-xl">
+                        <div className="flex gap-4">
+                            <Info className="h-5 w-5 text-white/40 flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="font-semibold text-blue-800 text-sm">Full Transparency</p>
-                                <p className="text-xs text-blue-700 mt-0.5 leading-relaxed">
+                                <p className="font-bold text-white text-xs uppercase tracking-wider">Monochromatic Transparency Engine</p>
+                                <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
                                     Every data point shown below was extracted by our AI agents from the documents you uploaded.
                                     Each signal includes a confidence score showing how certain the AI is about its extraction.
                                     Explore each section to see exactly what was found and how it influenced the decision.
@@ -404,41 +400,34 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                         const avgConf = sigs.length > 0
                             ? sigs.reduce((s, sig) => s + (sig.confidence ? parseFloat(sig.confidence) : 0), 0) / sigs.length
                             : 0;
-                        const colorMap: Record<string, string> = {
-                            blue: 'bg-blue-100 text-blue-600 border-blue-200',
-                            green: 'bg-green-100 text-green-600 border-green-200',
-                            purple: 'bg-purple-100 text-purple-600 border-purple-200',
-                            orange: 'bg-orange-100 text-orange-600 border-orange-200',
-                            red: 'bg-red-100 text-red-600 border-red-200',
-                        };
 
                         return (
-                            <Card key={agentKey} className={`overflow-hidden transition-all ${isExpanded ? 'ring-2 ring-blue-200' : ''}`}>
+                            <Card key={agentKey} className={`overflow-hidden transition-all bg-white/5 backdrop-blur-xl border-white/10 ${isExpanded ? 'border-white/30 bg-white/10' : 'hover:bg-white/10'}`}>
                                 <button
                                     onClick={() => setExpandedAgent(isExpanded ? null : agentKey)}
-                                    className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors"
+                                    className="w-full flex items-center gap-4 p-5 text-left transition-colors"
                                 >
-                                    <div className={`rounded-lg p-2.5 ${colorMap[meta.color] ?? colorMap.blue}`}>
+                                    <div className="rounded-lg p-2.5 bg-white/10 text-white/80 border border-white/10">
                                         {meta.icon}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between">
-                                            <p className="font-semibold text-gray-900">{meta.label}</p>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs text-muted-foreground">{sigs.length} signals</span>
+                                            <p className="text-sm font-bold text-white uppercase tracking-tight">{meta.label}</p>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[10px] uppercase font-bold text-white/30 tracking-widest">{sigs.length} signals</span>
                                                 {sigs.length > 0 && <ConfidenceBadge confidence={String(avgConf)} />}
-                                                {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                                {isExpanded ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
                                             </div>
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-0.5">{meta.desc}</p>
+                                        <p className="text-[11px] text-white/40 mt-1">{meta.desc}</p>
                                     </div>
                                 </button>
 
                                 {isExpanded && (
-                                    <div className="border-t bg-gray-50/50 divide-y divide-gray-100">
+                                    <div className="border-t border-white/10 bg-black/20 divide-y divide-white/5">
                                         {sigs.length === 0 ? (
-                                            <div className="p-5 text-center text-sm text-muted-foreground">
-                                                No signals extracted. This agent may not have run yet.
+                                            <div className="p-5 text-center text-xs text-white/30 uppercase tracking-widest">
+                                                No signals extracted
                                             </div>
                                         ) : (
                                             sigs.map((sig, i) => (
@@ -446,17 +435,17 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-medium text-gray-900">{formatSignalKey(sig.signalKey)}</p>
+                                                                <p className="text-sm font-medium text-white/90">{formatSignalKey(sig.signalKey)}</p>
                                                                 {sig.isUnverified && (
-                                                                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 uppercase">Unverified</span>
+                                                                    <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/40 uppercase border border-white/10">Unverified</span>
                                                                 )}
                                                             </div>
-                                                            <p className="text-sm text-gray-700 mt-0.5 font-mono">
+                                                            <p className="text-sm text-white/60 mt-1 font-mono">
                                                                 {formatSignalValue(sig.signalValue)}
                                                             </p>
                                                             {sig.rawSnippet && (
-                                                                <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2">
-                                                                    Source: &quot;{sig.rawSnippet}&quot;
+                                                                <p className="text-[10px] text-white/30 mt-1.5 italic line-clamp-2 leading-relaxed">
+                                                                    Source: &ldquo;{sig.rawSnippet}&rdquo;
                                                                 </p>
                                                             )}
                                                         </div>
@@ -481,30 +470,32 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
 
                     {/* Fraud alerts */}
                     {fraudFindings.length > 0 && (
-                        <Card className="overflow-hidden border-red-200">
-                            <div className="px-5 py-4 bg-red-50 border-b border-red-100 flex items-center gap-3">
-                                <BadgeAlert className="h-5 w-5 text-red-600" />
-                                <div>
-                                    <p className="font-bold text-red-800">Fraud / Litigation Signals ({fraudFindings.length})</p>
-                                    <p className="text-xs text-red-600">These findings flagged potential concerns during OSINT research</p>
+                        <Card className="overflow-hidden border-white/20 bg-white/5 backdrop-blur-xl ring-1 ring-white/10">
+                            <div className="px-5 py-4 bg-white/10 border-b border-white/10 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <BadgeAlert className="h-5 w-5 text-white" />
+                                    <div>
+                                        <p className="font-bold text-white text-xs uppercase tracking-widest">Priority Risk Signals ({fraudFindings.length})</p>
+                                        <p className="text-[10px] text-white/40 uppercase font-medium mt-0.5">Alerts flagged during automated OSINT research</p>
+                                    </div>
                                 </div>
+                                <span className="text-[10px] font-black text-white px-2 py-1 bg-white/20 rounded border border-white/20">⚠ HIGH RISK</span>
                             </div>
-                            <div className="divide-y divide-red-50">
+                            <div className="divide-y divide-white/5">
                                 {fraudFindings.map((f, i) => (
-                                    <div key={i} className="px-5 py-3 bg-red-50/30">
-                                        <div className="flex items-start justify-between gap-3">
+                                    <div key={i} className="px-5 py-4 bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="rounded border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-wider">
                                                         {RESEARCH_TYPE_LABELS[f.searchType] ?? f.searchType}
                                                     </span>
-                                                    <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
                                                 </div>
-                                                <p className="text-sm text-gray-800 leading-relaxed">{f.snippet}</p>
+                                                <p className="text-sm text-white/80 leading-relaxed font-medium">{f.snippet}</p>
                                             </div>
                                             {f.sourceUrl && (
                                                 <a href={f.sourceUrl} target="_blank" rel="noreferrer"
-                                                    className="flex-shrink-0 text-blue-600 hover:text-blue-800">
+                                                    className="flex-shrink-0 text-white/30 hover:text-white transition-colors">
                                                     <ExternalLink className="h-4 w-4" />
                                                 </a>
                                             )}
@@ -516,12 +507,12 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                     )}
 
                     {fraudFindings.length === 0 && (
-                        <Card className="p-5 border-l-4 border-l-green-500 bg-green-50/50">
-                            <div className="flex gap-3">
-                                <ShieldCheck className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        <Card className="p-5 border border-white/10 bg-white/5 backdrop-blur-xl">
+                            <div className="flex gap-4">
+                                <ShieldCheck className="h-5 w-5 text-white/40 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="font-semibold text-green-800 text-sm">No Fraud Signals Detected</p>
-                                    <p className="text-xs text-green-700 mt-0.5">
+                                    <p className="font-bold text-white text-xs uppercase tracking-widest">Verification Status: Clean</p>
+                                    <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
                                         OSINT research across court records, MCA filings, and news sources found no fraud indicators.
                                     </p>
                                 </div>
@@ -531,27 +522,27 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
 
                     {/* General research */}
                     {generalFindings.length > 0 && (
-                        <Card className="overflow-hidden">
-                            <div className="px-5 py-4 bg-gray-50 border-b flex items-center gap-3">
-                                <Search className="h-5 w-5 text-gray-600" />
+                        <Card className="overflow-hidden bg-white/5 backdrop-blur-xl border-white/10">
+                            <div className="px-5 py-4 bg-white/10 border-b border-white/10 flex items-center gap-3">
+                                <Search className="h-4 w-4 text-white/40" />
                                 <div>
-                                    <p className="font-bold text-gray-800">Research Findings ({generalFindings.length})</p>
-                                    <p className="text-xs text-muted-foreground">External data gathered about the company and directors</p>
+                                    <p className="font-bold text-white text-xs uppercase tracking-widest">Research Findings ({generalFindings.length})</p>
+                                    <p className="text-[10px] text-white/40 uppercase font-medium mt-0.5">External datasets gathered about the entity</p>
                                 </div>
                             </div>
-                            <div className="divide-y">
+                            <div className="divide-y divide-white/5">
                                 {generalFindings.map((f, i) => (
-                                    <div key={i} className="px-5 py-3">
-                                        <div className="flex items-start justify-between gap-3">
+                                    <div key={i} className="px-5 py-4 hover:bg-white/[0.02] transition-colors">
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1">
-                                                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 mb-1 inline-block">
+                                                <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-bold text-white/50 mb-2 inline-block uppercase tracking-wider">
                                                     {RESEARCH_TYPE_LABELS[f.searchType] ?? f.searchType}
                                                 </span>
-                                                <p className="text-sm text-gray-700 leading-relaxed mt-1">{f.snippet}</p>
+                                                <p className="text-sm text-white/70 leading-relaxed font-medium mt-1">{f.snippet}</p>
                                             </div>
                                             {f.sourceUrl && (
                                                 <a href={f.sourceUrl} target="_blank" rel="noreferrer"
-                                                    className="flex-shrink-0 text-blue-600 hover:text-blue-800">
+                                                    className="flex-shrink-0 text-white/30 hover:text-white transition-colors">
                                                     <ExternalLink className="h-4 w-4" />
                                                 </a>
                                             )}
@@ -581,35 +572,38 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                     </p>
 
                     {notes.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {notes.map((note, i) => (
-                                <Card key={i} className="p-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`rounded-full p-2 flex-shrink-0 ${(note.scoreDelta ?? 0) > 0 ? 'bg-green-100' :
-                                            (note.scoreDelta ?? 0) < 0 ? 'bg-red-100' : 'bg-gray-100'
+                                <Card key={i} className="p-5 bg-white/5 backdrop-blur-xl border-white/10 hover:border-white/20 transition-all">
+                                    <div className="flex items-start gap-4">
+                                        <div className={`rounded-lg p-2 flex-shrink-0 border border-white/10 ${(note.scoreDelta ?? 0) > 0 ? 'bg-white/20' :
+                                            (note.scoreDelta ?? 0) < 0 ? 'bg-white/5' : 'bg-white/10'
                                             }`}>
-                                            {(note.scoreDelta ?? 0) > 0 ? <TrendingUp className="h-4 w-4 text-green-600" /> :
-                                                (note.scoreDelta ?? 0) < 0 ? <TrendingDown className="h-4 w-4 text-red-600" /> :
-                                                    <Users className="h-4 w-4 text-gray-500" />}
+                                            {(note.scoreDelta ?? 0) > 0 ? <TrendingUp className="h-4 w-4 text-white" /> :
+                                                (note.scoreDelta ?? 0) < 0 ? <TrendingDown className="h-4 w-4 text-white/40" /> :
+                                                    <Users className="h-4 w-4 text-white/60" />}
                                         </div>
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 capitalize">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-widest border border-white/10">
                                                     {note.category.replace(/_/g, ' ')}
                                                 </span>
-                                                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 capitalize">
+                                                <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/40 uppercase border border-white/5">
                                                     {note.fiveCDimension}
                                                 </span>
                                                 {note.scoreDelta !== null && note.scoreDelta !== 0 && (
-                                                    <span className={`text-xs font-bold ${note.scoreDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {note.scoreDelta > 0 ? '+' : ''}{note.scoreDelta} pts
+                                                    <span className={`text-xs font-black tabular-nums ${note.scoreDelta > 0 ? 'text-white' : 'text-white/40'}`}>
+                                                        {note.scoreDelta > 0 ? '▲' : '▼'}{Math.abs(note.scoreDelta)} PTS
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-gray-700 leading-relaxed">{note.noteText}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {new Date(note.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                            </p>
+                                            <p className="text-sm text-white/80 leading-relaxed font-medium">{note.noteText}</p>
+                                            <div className="flex items-center gap-2 mt-3">
+                                                <Clock className="h-3 w-3 text-white/20" />
+                                                <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">
+                                                    SUBMITTED: {new Date(note.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </Card>
@@ -637,19 +631,19 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                         <Card className="overflow-hidden">
                             <div className="divide-y">
                                 {docs.map(doc => (
-                                    <div key={doc.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50">
-                                        <div className="rounded-lg bg-blue-100 p-2 flex-shrink-0">
-                                            <FileText className="h-5 w-5 text-blue-600" />
+                                    <div key={doc.id} className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 transition-colors">
+                                        <div className="rounded-lg bg-white/10 p-2.5 flex-shrink-0 border border-white/10">
+                                            <FileText className="h-5 w-5 text-white/60" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 truncate">{doc.fileName}</p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-sm font-bold text-white/90 truncate uppercase tracking-tight">{doc.fileName}</p>
+                                            <p className="text-[10px] text-white/30 font-bold uppercase mt-1 tracking-widest">
                                                 {doc.documentType.replace(/_/g, ' ')}
                                                 {doc.fileSize ? ` · ${(doc.fileSize / 1024).toFixed(0)} KB` : ''}
                                             </p>
                                         </div>
-                                        <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                                            Processed
+                                        <span className="rounded-full bg-white/10 border border-white/20 px-3 py-1 text-[10px] font-black text-white uppercase tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                                            PROCESSED ✓
                                         </span>
                                     </div>
                                 ))}
@@ -692,31 +686,36 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                             <p className="text-xs text-muted-foreground mt-1">No prior loan applications found for this promoter. History will be recorded after CAM generation.</p>
                         </Card>
                     ) : (
-                        <div className="space-y-3">
-                            <Card className="px-5 py-3 bg-purple-50 border-purple-200">
-                                <div className="flex items-center gap-2">
-                                    <Brain className="h-5 w-5 text-purple-600" />
+                        <div className="space-y-4">
+                            <Card className="px-5 py-4 bg-white/10 border border-white/20 backdrop-blur-xl">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2.5 bg-white text-black rounded-lg">
+                                        <Brain className="h-5 w-5" />
+                                    </div>
                                     <div>
-                                        <p className="text-sm font-medium text-purple-800">Promoter DIN: {promoterHistory.din}</p>
-                                        <p className="text-xs text-purple-600">{promoterHistory.memories.length} memory record{promoterHistory.memories.length !== 1 ? 's' : ''} found across prior applications</p>
+                                        <p className="text-sm font-black text-white uppercase tracking-widest">Promoter DNA: {promoterHistory.din}</p>
+                                        <p className="text-[10px] text-white/50 uppercase font-bold mt-0.5">{promoterHistory.memories.length} historical records discovered across prior exposure</p>
                                     </div>
                                 </div>
                             </Card>
 
                             {promoterHistory.memories.map((mem, idx) => (
-                                <Card key={mem.id || idx} className="p-4">
-                                    <div className="flex items-start gap-3">
+                                <Card key={mem.id || idx} className="p-5 bg-white/5 backdrop-blur-xl border-white/10 hover:border-white/20 transition-all">
+                                    <div className="flex items-start gap-4">
                                         <div className="mt-0.5 flex-shrink-0">
-                                            <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                                                <FileText className="h-4 w-4 text-purple-600" />
+                                            <div className="h-10 w-10 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center text-white/40">
+                                                <FileText className="h-5 w-5" />
                                             </div>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{mem.memory}</pre>
+                                            <pre className="text-sm text-white/80 whitespace-pre-wrap font-sans leading-relaxed font-medium">{mem.memory}</pre>
                                             {mem.created_at && (
-                                                <p className="text-xs text-muted-foreground mt-2">
-                                                    Recorded: {new Date(mem.created_at).toLocaleString('en-IN')}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+                                                    <Clock className="h-3 w-3 text-white/20" />
+                                                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">
+                                                        RECORDED: {new Date(mem.created_at).toLocaleString('en-IN')}
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -748,9 +747,9 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                         Complete audit trail of every step in the AI analysis pipeline.
                     </p>
 
-                    <Card className="overflow-hidden">
-                        <div className="px-5 py-4 bg-gray-50 border-b">
-                            <p className="font-bold text-gray-800">Pipeline Execution Timeline</p>
+                    <Card className="overflow-hidden bg-white/5 backdrop-blur-xl border-white/10">
+                        <div className="px-5 py-4 bg-white/10 border-b border-white/10">
+                            <p className="font-bold text-white text-xs uppercase tracking-widest">Pipeline Execution Audit</p>
                         </div>
 
                         {stages.length > 0 ? (
@@ -763,35 +762,35 @@ export function AnalysisDashboard({ appId }: { appId: string }) {
                                     const isFailed = stage.status === 'failed';
                                     const isProcessing = stage.status === 'processing';
                                     return (
-                                        <div key={i} className="relative mb-4 last:mb-0">
+                                        <div key={i} className="relative mb-6 last:mb-0">
                                             {/* Timeline dot */}
-                                            <div className={`absolute -left-[1.05rem] top-1 h-3.5 w-3.5 rounded-full border-2 border-white ${isDone ? 'bg-green-500' : isFailed ? 'bg-red-500' : isProcessing ? 'bg-blue-500 animate-pulse' : 'bg-gray-300'
+                                            <div className={`absolute -left-[1.2rem] top-1.5 h-4 w-4 rounded-full border-4 border-[#0A0A0A] ${isDone ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' : isFailed ? 'bg-white/40 border-white/20' : isProcessing ? 'bg-white animate-pulse' : 'bg-white/10'
                                                 }`} />
-                                            <div className="ml-4">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-sm font-medium text-gray-900 capitalize">{stage.stage.replace(/_/g, ' ')}</p>
-                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${isDone ? 'bg-green-100 text-green-700' :
-                                                        isFailed ? 'bg-red-100 text-red-700' :
-                                                            isProcessing ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-gray-100 text-gray-600'
+                                            <div className="ml-6">
+                                                <div className="flex items-center gap-3">
+                                                    <p className="text-xs font-black text-white uppercase tracking-widest">{stage.stage.replace(/_/g, ' ')}</p>
+                                                    <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter border ${isDone ? 'bg-white/20 border-white/20 text-white' :
+                                                        isFailed ? 'bg-white/5 border-white/10 text-white/40' :
+                                                            isProcessing ? 'bg-white text-black' :
+                                                                'bg-white/5 border-white/5 text-white/20'
                                                         }`}>
                                                         {stage.status}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-3 mt-0.5">
+                                                <div className="flex items-center gap-4 mt-1.5">
                                                     {stage.startedAt && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Started: {new Date(stage.startedAt).toLocaleTimeString('en-IN')}
+                                                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-tight">
+                                                            T: {new Date(stage.startedAt).toLocaleTimeString('en-IN')}
                                                         </p>
                                                     )}
                                                     {stage.completedAt && stage.startedAt && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Duration: {((new Date(stage.completedAt).getTime() - new Date(stage.startedAt).getTime()) / 1000).toFixed(1)}s
+                                                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-tight">
+                                                            Δ: {((new Date(stage.completedAt).getTime() - new Date(stage.startedAt).getTime()) / 1000).toFixed(1)}S
                                                         </p>
                                                     )}
                                                 </div>
                                                 {stage.errorMessage && (
-                                                    <p className="text-xs text-red-600 mt-0.5">{stage.errorMessage}</p>
+                                                    <p className="text-[10px] text-white/40 font-bold uppercase mt-1 border-l border-white/20 pl-2 leading-relaxed">{stage.errorMessage}</p>
                                                 )}
                                             </div>
                                         </div>
