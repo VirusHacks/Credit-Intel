@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Trash2, ArrowUpRight } from "lucide-react";
+import { Trash2, ArrowUpRight, Eye } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
