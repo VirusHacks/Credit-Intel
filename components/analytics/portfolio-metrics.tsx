@@ -1,7 +1,6 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Users, FileText, Activity, Shield } from 'lucide-react';
+import { FileText, Users, TrendingUp, Activity, Shield } from 'lucide-react';
 
 interface PortfolioData {
   totalApplications: number;
@@ -15,12 +14,6 @@ interface SignalData {
   totalSignals: number;
   avgConfidence: number;
   unverifiedCount: number;
-}
-
-interface PortfolioMetric {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
 }
 
 function formatInr(val: string | number): string {
@@ -38,53 +31,29 @@ export function PortfolioMetrics({
   data?: PortfolioData;
   signalStats?: SignalData;
 }) {
-  const metrics: PortfolioMetric[] = [
-    {
-      label: 'Total Applications',
-      value: String(data?.totalApplications ?? 0),
-      icon: <FileText className="w-5 h-5 text-primary" />,
-    },
-    {
-      label: 'Completed Analyses',
-      value: String(data?.completedAnalyses ?? 0),
-      icon: <Users className="w-5 h-5 text-violet-600" />,
-    },
-    {
-      label: 'Approval Rate',
-      value: `${data?.approvalRate ?? 0}%`,
-      icon: <TrendingUp className="w-5 h-5 text-green-600" />,
-    },
-    {
-      label: 'Total Requested',
-      value: formatInr(data?.totalRequested ?? '0'),
-      icon: <TrendingUp className="w-5 h-5 text-emerald-600" />,
-    },
-    {
-      label: 'Agent Signals',
-      value: String(signalStats?.totalSignals ?? 0),
-      icon: <Activity className="w-5 h-5 text-amber-600" />,
-    },
-    {
-      label: 'Avg Confidence',
-      value: `${signalStats?.avgConfidence ?? 0}%`,
-      icon: <Shield className="w-5 h-5 text-indigo-600" />,
-    },
+  const metrics = [
+    { label: 'Total Applications', value: String(data?.totalApplications ?? 0), icon: <FileText className="w-5 h-5 text-white/40" /> },
+    { label: 'Completed Analyses', value: String(data?.completedAnalyses ?? 0), icon: <Users className="w-5 h-5 text-white/40" /> },
+    { label: 'Approval Rate',       value: `${data?.approvalRate ?? 0}%`,         icon: <TrendingUp className="w-5 h-5 text-white/40" /> },
+    { label: 'Total Requested',     value: formatInr(data?.totalRequested ?? '0'), icon: <TrendingUp className="w-5 h-5 text-white/40" /> },
+    { label: 'Agent Signals',       value: String(signalStats?.totalSignals ?? 0), icon: <Activity className="w-5 h-5 text-white/40" /> },
+    { label: 'Avg Confidence',      value: `${signalStats?.avgConfidence ?? 0}%`,  icon: <Shield className="w-5 h-5 text-white/40" /> },
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
       {metrics.map((metric, index) => (
-        <Card key={index} className="p-4">
+        <div key={index} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 shadow-xl">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground mb-1">{metric.label}</p>
-              <p className="text-2xl font-bold text-foreground tabular-nums">{metric.value}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/30 mb-1">{metric.label}</p>
+              <p className="text-2xl font-bold text-white tabular-nums">{metric.value}</p>
             </div>
-            <div className="flex-shrink-0 p-2 bg-secondary/50 rounded-xl">
+            <div className="flex-shrink-0 p-2 bg-white/5 rounded-lg">
               {metric.icon}
             </div>
           </div>
-        </Card>
+        </div>
       ))}
     </div>
   );

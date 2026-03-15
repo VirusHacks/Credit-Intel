@@ -4,26 +4,27 @@ import type { PipelineStatus, ApplicationStatus, StageStatus } from "@/lib/types
 
 type StatusType = PipelineStatus | ApplicationStatus | StageStatus
 
-const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
+// Monochromatic status config — no colors, only opacity/weight contrast
+const statusConfig: Record<string, { label: string; symbol: string; weight: string; opacity: string }> = {
   // Pipeline statuses
-  not_started: { label: "Not Started", color: "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400", dot: "bg-slate-400" },
-  ingesting: { label: "Ingesting", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", dot: "bg-blue-500 animate-pulse" },
-  analyzing: { label: "Analyzing", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", dot: "bg-blue-500 animate-pulse" },
-  awaiting_qualitative: { label: "Awaiting Input", color: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", dot: "bg-amber-500" },
-  reconciling: { label: "Reconciling", color: "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400", dot: "bg-violet-500 animate-pulse" },
-  generating_cam: { label: "Generating CAM", color: "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400", dot: "bg-violet-500 animate-pulse" },
-  complete: { label: "Complete", color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
-  failed: { label: "Failed", color: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400", dot: "bg-red-500" },
+  not_started:          { label: "Not Started",    symbol: "○", weight: "font-normal",   opacity: "text-white/40" },
+  ingesting:            { label: "Ingesting",       symbol: "◌", weight: "font-medium",   opacity: "text-white/60" },
+  analyzing:            { label: "Analyzing",       symbol: "◌", weight: "font-medium",   opacity: "text-white/60" },
+  awaiting_qualitative: { label: "Awaiting Input",  symbol: "⚠", weight: "font-semibold", opacity: "text-white/80" },
+  reconciling:          { label: "Reconciling",     symbol: "◌", weight: "font-medium",   opacity: "text-white/60" },
+  generating_cam:       { label: "Generating CAM",  symbol: "◌", weight: "font-medium",   opacity: "text-white/60" },
+  complete:             { label: "Complete",         symbol: "✓", weight: "font-semibold", opacity: "text-white"     },
+  failed:               { label: "Failed",           symbol: "✗", weight: "font-bold",     opacity: "text-white"     },
   // Application statuses
-  draft: { label: "Draft", color: "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400", dot: "bg-slate-400" },
-  submitted: { label: "Submitted", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", dot: "bg-blue-500" },
-  under_review: { label: "Under Review", color: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", dot: "bg-amber-500" },
-  approved: { label: "Approved", color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
-  rejected: { label: "Rejected", color: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400", dot: "bg-red-500" },
+  draft:                { label: "Draft",            symbol: "○", weight: "font-normal",   opacity: "text-white/40" },
+  submitted:            { label: "Submitted",        symbol: "→", weight: "font-medium",   opacity: "text-white/60" },
+  under_review:         { label: "Under Review",     symbol: "⚠", weight: "font-semibold", opacity: "text-white/80" },
+  approved:             { label: "Approved",          symbol: "✓", weight: "font-semibold", opacity: "text-white"     },
+  rejected:             { label: "Rejected",          symbol: "✗", weight: "font-bold",     opacity: "text-white"     },
   // Stage statuses
-  pending: { label: "Pending", color: "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400", dot: "bg-slate-400" },
-  processing: { label: "Processing", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", dot: "bg-blue-500 animate-pulse" },
-  done: { label: "Done", color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
+  pending:              { label: "Pending",           symbol: "○", weight: "font-normal",   opacity: "text-white/40" },
+  processing:           { label: "Processing",        symbol: "◌", weight: "font-medium",   opacity: "text-white/60" },
+  done:                 { label: "Done",               symbol: "✓", weight: "font-semibold", opacity: "text-white"     },
 }
 
 interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -32,18 +33,22 @@ interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 export function StatusBadge({ status, label, className, ...props }: StatusBadgeProps) {
-  const config = statusConfig[status] ?? { label: status, color: "bg-slate-50 text-slate-600", dot: "bg-slate-400" }
+  const config = statusConfig[status] ?? { label: status, symbol: "○", weight: "font-normal", opacity: "text-white/40" }
+  const isActive = ["ingesting","analyzing","reconciling","generating_cam","processing"].includes(status)
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
-        config.color,
+        "inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs",
+        config.weight,
+        config.opacity,
         className,
       )}
       {...props}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full", config.dot)} />
+      <span className={cn("text-[10px]", isActive && "animate-pulse")}>
+        {config.symbol}
+      </span>
       {label ?? config.label}
     </span>
   )

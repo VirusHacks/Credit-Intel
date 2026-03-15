@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/config';
-import { applications, companies, camOutputs, agentSignals, researchFindings } from '@/lib/db/schema';
+import { applications, companies, camOutputs, agentSignals, researchFindings, assessments } from '@/lib/db/schema';
 import { sql, eq, desc } from 'drizzle-orm';
 
 export async function GET() {
@@ -101,6 +101,15 @@ export async function GET() {
     .orderBy(desc(applications.createdAt))
     .limit(5);
 
+  // 9. Risk rating distribution
+  const riskCounts = await db
+    .select({
+      name: assessments.overallRisk,
+      value: sql<number>`count(*)::int`,
+    })
+    .from(assessments)
+    .groupBy(assessments.overallRisk);
+
   return NextResponse.json({
     portfolio: {
       totalApplications: total,
@@ -131,5 +140,11 @@ export async function GET() {
       unverifiedCount: signalStats?.unverifiedCount ?? 0,
     },
     recentApplications: recentApps,
+    riskDistribution: riskCounts.map(r => ({
+      name: (r.name || 'Unknown')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase()) + ' Risk',
+      value: r.value
+    })),
   });
 }

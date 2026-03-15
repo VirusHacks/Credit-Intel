@@ -17,6 +17,7 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
 } from '@xyflow/react';
+// @ts-ignore - Valid import, just missing type declaration
 import '@xyflow/react/dist/style.css';
 import {
   CheckCircle2,
@@ -58,32 +59,36 @@ const STAGE_META: Record<string, { label: string; icon: React.ReactNode; group: 
   cam_generator: { label: 'CAM Generator', icon: <FileBarChart2 className="h-4 w-4" />, group: 'io' },
 };
 
-// ─── Status styling ───────────────────────────────────────────────────────────
+// ─── Monochromatic Status styling ─────────────────────────────────────────────
 function statusStyle(status: StageStatus) {
   switch (status) {
     case 'completed':
       return {
-        border: '2px solid #16a34a',
-        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-        shadow: '0 0 0 3px rgba(22,163,74,0.15)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'rgba(255,255,255,0.05)',
+        shadow: 'none',
+        backdropFilter: 'blur(16px)',
       };
     case 'in-progress':
       return {
-        border: '2px solid #2563eb',
-        background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-        shadow: '0 0 0 3px rgba(37,99,235,0.20)',
+        border: '1px solid rgba(255,255,255,0.3)',
+        background: 'rgba(255,255,255,0.1)',
+        shadow: '0 0 15px rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(16px)',
       };
     case 'failed':
       return {
-        border: '2px solid #dc2626',
-        background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
-        shadow: '0 0 0 3px rgba(220,38,38,0.15)',
+        border: '1px dashed rgba(255,255,255,0.3)',
+        background: 'rgba(0,0,0,0.5)',
+        shadow: 'none',
+        backdropFilter: 'blur(16px)',
       };
     default:
       return {
-        border: '2px solid #e5e7eb',
-        background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'rgba(255,255,255,0.02)',
         shadow: 'none',
+        backdropFilter: 'blur(16px)',
       };
   }
 }
@@ -98,44 +103,50 @@ interface PipelineNodeData extends Record<string, unknown> {
 }
 
 function StatusIcon({ status, className }: { status: StageStatus; className?: string }) {
-  if (status === 'completed') return <CheckCircle2 className={`text-green-600 ${className}`} />;
-  if (status === 'in-progress') return <Zap className={`text-blue-600 animate-pulse ${className}`} />;
-  if (status === 'failed') return <XCircle className={`text-red-600 ${className}`} />;
-  return <Clock className={`text-gray-400 ${className}`} />;
+  if (status === 'completed') return <CheckCircle2 className={`text-white/60 ${className}`} />;
+  if (status === 'in-progress') return <Zap className={`text-white animate-pulse ${className}`} />;
+  if (status === 'failed') return <XCircle className={`text-white/80 ${className}`} />;
+  return <Clock className={`text-white/20 ${className}`} />;
 }
 
 function PipelineNode({ data }: NodeProps) {
   const d = data as PipelineNodeData;
   const meta = STAGE_META[d.stage] ?? { label: d.stage, icon: <Brain className="h-4 w-4" />, group: 'agent' };
-  const { border, background, shadow } = statusStyle(d.status);
+  const { border, background, shadow, backdropFilter } = statusStyle(d.status);
   const confPct = d.confidence > 0 ? `${Math.round(d.confidence * 100)}%` : null;
 
   const labelColor =
-    d.status === 'completed' ? '#15803d' :
-    d.status === 'in-progress' ? '#1d4ed8' :
-    d.status === 'failed' ? '#b91c1c' :
-    '#6b7280';
+    d.status === 'completed' ? 'rgba(255,255,255,0.8)' :
+    d.status === 'in-progress' ? '#ffffff' :
+    d.status === 'failed' ? 'rgba(255,255,255,0.9)' :
+    'rgba(255,255,255,0.4)';
+
+  const activeNode = d.status === 'in-progress';
 
   return (
     <div
+      className={activeNode ? 'ring-2 ring-white/20' : ''}
       style={{
         border,
         background,
         boxShadow: shadow,
+        backdropFilter,
+        WebkitBackdropFilter: backdropFilter,
         borderRadius: 12,
         minWidth: 168,
         padding: '10px 14px',
         fontFamily: 'inherit',
         position: 'relative',
+        transition: 'all 0.3s ease',
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: '#94a3b8', width: 8, height: 8 }} />
+      <Handle type="target" position={Position.Top} style={{ background: '#444', width: 8, height: 8, border: 'none' }} />
 
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ color: labelColor }}>{meta.icon}</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: labelColor, lineHeight: 1.2 }}>
             {meta.label}
           </span>
         </div>
@@ -143,39 +154,41 @@ function PipelineNode({ data }: NodeProps) {
       </div>
 
       {/* Message */}
-      <p style={{ fontSize: 10, color: '#6b7280', margin: 0, lineHeight: 1.4 }}>
+      <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', margin: 0, lineHeight: 1.4 }}>
         {d.message || 'Waiting…'}
       </p>
 
       {/* Footer row: confidence + timestamp */}
       {(confPct || d.timestamp) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, gap: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, gap: 4 }}>
           {confPct && (
             <span style={{
               fontSize: 10, fontWeight: 600,
-              background: d.status === 'completed' ? '#dcfce7' : '#e0e7ff',
-              color: d.status === 'completed' ? '#15803d' : '#3730a3',
+              background: d.status === 'completed' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.15)',
+              color: d.status === 'completed' ? 'rgba(255,255,255,0.7)' : '#fff',
+              border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 4, padding: '1px 5px',
             }}>
               {confPct} conf.
             </span>
           )}
           {d.timestamp && (
-            <span style={{ fontSize: 9, color: '#9ca3af', marginLeft: 'auto' }}>{d.timestamp}</span>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>{d.timestamp}</span>
           )}
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Bottom} style={{ background: '#444', width: 8, height: 8, border: 'none' }} />
     </div>
   );
 }
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 // x positions for the 5 parallel agents (spread evenly around center=420)
-const AGENT_X = [60, 220, 380, 540, 700];
-const NODE_W = 168;
-const CENTER_X = 420 - NODE_W / 2;
+// Increased spacing to avoid overlap (200px spacing instead of 160px)
+const AGENT_X = [20, 220, 420, 620, 820];
+const NODE_W = 168; // width of node roughly
+const CENTER_X = 420; // 420 + 84 = 504 middle
 
 // ─── Build nodes + edges from stage data ─────────────────────────────────────
 function buildGraph(stages: StageInfo[]): { nodes: Node[]; edges: Edge[] } {
@@ -186,7 +199,8 @@ function buildGraph(stages: StageInfo[]): { nodes: Node[]; edges: Edge[] } {
     return {
       id,
       type: 'pipeline',
-      position: { x, y },
+      // We subtract half width to center the node exactly on the X coordinate
+      position: { x: x - NODE_W / 2, y },
       data: {
         stage: id,
         status: s?.status ?? 'pending',
@@ -197,25 +211,30 @@ function buildGraph(stages: StageInfo[]): { nodes: Node[]; edges: Edge[] } {
     };
   }
 
-  function edge(
-    source: string,
-    target: string,
-    status: StageStatus,
-  ): Edge {
+  function edge(source: string, target: string, status: StageStatus): Edge {
     const done = status === 'completed';
     const active = status === 'in-progress';
+    const failed = status === 'failed';
+    
+    // Monochromatic edge colors
+    const edgeColor = done ? 'rgba(255,255,255,0.3)' : 
+                      active ? 'rgba(255,255,255,0.8)' : 
+                      failed ? 'rgba(255,255,255,0.5)' : 
+                      '#222222';
+
     return {
       id: `${source}->${target}`,
       source,
       target,
+      type: 'smoothstep', // Use right-angle lines instead of messy bezier curves
       animated: active,
       style: {
-        stroke: done ? '#16a34a' : active ? '#2563eb' : '#d1d5db',
-        strokeWidth: done ? 2 : 1.5,
+        stroke: edgeColor,
+        strokeWidth: done || active ? 2 : 1.5,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: done ? '#16a34a' : active ? '#2563eb' : '#d1d5db',
+        color: edgeColor,
         width: 18,
         height: 18,
       },
@@ -225,7 +244,6 @@ function buildGraph(stages: StageInfo[]): { nodes: Node[]; edges: Edge[] } {
   const ingest = stageMap['ingest'];
   const qGate = stageMap['qualitative_gate'];
   const reconciler = stageMap['reconciler'];
-  const cam = stageMap['cam_generator'];
 
   const parallelAgents = ['bank_statement', 'gst_analyzer', 'itr_balancesheet', 'cibil_cmr', 'scout'];
 
@@ -287,32 +305,33 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
   const hasActive = stages.some((s) => s.status === 'in-progress');
 
   return (
-    <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-[#222222] bg-[#0A0A0A] shadow-sm overflow-hidden">
       {/* Legend bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-gray-50">
-        <div className="flex items-center gap-4 text-xs text-gray-600">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-green-500 inline-block" /> Completed
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[#222222] bg-[#111111]">
+        <div className="flex items-center gap-5 text-xs text-white/60">
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-white/60 inline-block border border-white/20" /> Completed
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-blue-500 inline-block" /> In Progress
+          <span className="flex items-center gap-2 text-white">
+            <span className="h-2.5 w-2.5 rounded-full bg-white inline-block shadow-[0_0_8px_rgba(255,255,255,0.5)]" /> In Progress
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-red-500 inline-block" /> Failed
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#111111] border border-white/50 inline-block border-dashed" /> Failed
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-gray-300 inline-block" /> Pending
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-transparent border border-[#333] inline-block" /> Pending
           </span>
         </div>
-        <span className="text-xs font-semibold text-gray-500">
-          {completedCount}/{stages.length} stages
-          {hasActive && <span className="ml-2 text-blue-600 animate-pulse">● live</span>}
+        <span className="text-xs font-medium text-white/50">
+          {completedCount} / {stages.length} stages
+          {hasActive && <span className="ml-3 text-white animate-pulse">● live</span>}
         </span>
       </div>
 
       {/* React Flow canvas */}
       <div style={{ height: 920 }}>
         <ReactFlow
+          colorMode="dark"
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -325,20 +344,23 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
           proOptions={{ hideAttribution: true }}
           panOnDrag
           zoomOnScroll
+          className="bg-[#0A0A0A]"
         >
-          <Background color="#e5e7eb" gap={20} size={1} />
+          <Background color="#222222" gap={20} size={1} />
           <Controls
-            style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8 }}
+            className="bg-[#111111] border-[#222222] fill-white"
+            style={{ borderRadius: 8 }}
           />
           <MiniMap
             nodeColor={(n) => {
               const d = n.data as PipelineNodeData;
-              if (d.status === 'completed') return '#16a34a';
-              if (d.status === 'in-progress') return '#2563eb';
-              if (d.status === 'failed') return '#dc2626';
-              return '#d1d5db';
+              if (d.status === 'completed') return 'rgba(255,255,255,0.3)';
+              if (d.status === 'in-progress') return '#ffffff';
+              if (d.status === 'failed') return 'rgba(255,255,255,0.5)';
+              return '#222222';
             }}
-            style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}
+            maskColor="rgba(0, 0, 0, 0.7)"
+            style={{ background: '#111111', border: '1px solid #222222', borderRadius: 8 }}
           />
         </ReactFlow>
       </div>

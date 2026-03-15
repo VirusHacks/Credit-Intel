@@ -85,14 +85,14 @@ export function AuditLogViewer() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="p-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl">
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
           <div className="flex-1">
             <label className="text-sm font-medium text-foreground block mb-2">Filter by Entity</label>
             <select
               value={filterEntityType}
               onChange={(e) => setFilterEntityType(e.target.value)}
-              className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+              className="w-full px-3 py-2 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-white/5 backdrop-blur-md text-white"
             >
               <option value="">All Entities</option>
               {availableEntityTypes.map((et) => (
@@ -105,7 +105,7 @@ export function AuditLogViewer() {
             <select
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
-              className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+              className="w-full px-3 py-2 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-white/5 backdrop-blur-md text-white"
             >
               <option value="">All Actions</option>
               {availableActions.map((action) => (
@@ -124,7 +124,7 @@ export function AuditLogViewer() {
       </Card>
 
       {/* Audit Log Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -138,7 +138,7 @@ export function AuditLogViewer() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-secondary/50 border-b">
+              <thead className="bg-black/40 border-b border-white/10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Timestamp</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
@@ -147,11 +147,11 @@ export function AuditLogViewer() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-white/10">
                 {logs.map((log) => (
                   <tr
                     key={log.id}
-                    className="hover:bg-secondary/50 transition cursor-pointer"
+                    className="hover:bg-white/5 transition cursor-pointer"
                     onClick={() => setSelectedLog(log)}
                   >
                     <td className="px-6 py-4 text-sm text-muted-foreground">
@@ -165,10 +165,10 @@ export function AuditLogViewer() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${log.action === 'denied' ? 'bg-destructive/10 text-destructive'
-                          : log.action === 'created' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                            : log.action === 'updated' ? 'bg-primary/10 text-primary'
-                              : 'bg-muted text-muted-foreground'
+                      <span className={`inline-block px-2 py-1 rounded-md text-xs font-semibold border border-white/10 ${log.action === 'denied' ? 'bg-white/20 text-white'
+                          : log.action === 'created' ? 'bg-white/5 text-white/60'
+                            : log.action === 'updated' ? 'bg-white/10 text-white/80'
+                              : 'bg-white/5 text-white/40'
                         }`}>
                         {log.action}
                       </span>
@@ -188,7 +188,7 @@ export function AuditLogViewer() {
 
       {/* Details Panel */}
       {selectedLog && (
-        <Card className="p-6 bg-primary/5 border-primary/20">
+        <Card className="p-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl">
           <div className="flex items-start justify-between mb-4">
             <h3 className="text-lg font-semibold text-foreground">Audit Log Details</h3>
             <button onClick={() => setSelectedLog(null)} className="text-muted-foreground hover:text-foreground">✕</button>
@@ -221,7 +221,7 @@ export function AuditLogViewer() {
             {selectedLog.changes && Object.keys(selectedLog.changes).length > 0 && (
               <div className="md:col-span-2">
                 <p className="text-muted-foreground">Changes</p>
-                <pre className="mt-1 p-3 bg-white rounded border text-xs overflow-auto max-h-[200px] font-mono">
+                <pre className="mt-1 p-3 bg-black/40 rounded-xl border border-white/10 text-xs overflow-auto max-h-[200px] font-mono shadow-inner text-white/60">
                   {JSON.stringify(selectedLog.changes, null, 2)}
                 </pre>
               </div>

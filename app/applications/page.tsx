@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MainNav } from '@/components/layout/main-nav';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { ApplicationsTable, AppListItem } from '@/components/tables/applications-table';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { Plus, Loader2, Search } from 'lucide-react';
@@ -54,61 +53,63 @@ export default function ApplicationsPage() {
     : applications;
 
   return (
-    <div className="min-h-screen bg-background">
-      <MainNav />
-      <main className="mx-auto max-w-[1320px] space-y-6 px-6 py-8">
-        <PageHeader
-          title="Applications"
-          description="Manage and review all credit applications."
-          actions={
-            <Link href="/applications/new">
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Application
-              </Button>
-            </Link>
-          }
-        />
+    <DashboardLayout>
+      <div className="flex flex-col">
+        {/* Sticky Header */}
+        <h1 className="sticky top-0 z-[10] flex items-center justify-between border-b border-white/10 bg-black/40 px-6 py-5 text-4xl font-medium backdrop-blur-2xl">
+          Applications
+          <Link href="/applications/new">
+            <Button className="flex items-center gap-2 bg-white text-black hover:bg-white/90 text-sm font-medium px-4 py-2">
+              <Plus className="h-4 w-4" />
+              New Application
+            </Button>
+          </Link>
+        </h1>
 
-        {/* Filters Bar */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-1">
-            {PIPELINE_FILTERS.map((f) => (
-              <button
-                key={f.label}
-                onClick={() => setStatusFilter(f.value)}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-                  statusFilter === f.value
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
+        {/* Main Content */}
+        <div className="relative flex flex-col gap-6 p-6">
+          {/* Filters Bar */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-1">
+              {PIPELINE_FILTERS.map((f) => (
+                <button
+                  key={f.label}
+                  onClick={() => setStatusFilter(f.value)}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-sm transition-colors',
+                    statusFilter === f.value
+                      ? 'bg-white/10 text-white font-medium'
+                      : 'text-white/40 hover:bg-white/5 hover:text-white/80',
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 border border-white/10 backdrop-blur-md shadow-xl w-full sm:w-72">
+              <Search className="h-4 w-4 text-white/40 shrink-0" />
+              <Input
+                placeholder="Search by company or industry..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="border-none bg-transparent text-white placeholder:text-white/30 focus-visible:ring-0 p-0 h-auto"
+              />
+            </div>
           </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search by company or industry..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+
+          {/* Table */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="flex items-center gap-2 text-sm text-white/60">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading...
+              </div>
+            </div>
+          ) : (
+            <ApplicationsTable applications={filtered} onDelete={handleDelete} />
+          )}
         </div>
-
-        {/* Table */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <ApplicationsTable applications={filtered} onDelete={handleDelete} />
-        )}
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
-

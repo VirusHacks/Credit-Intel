@@ -67,22 +67,22 @@ const complianceItems: ComplianceItem[] = [
 const getStatusIcon = (status: string) => {
   switch (status) {
     case 'compliant':
-      return <CheckCircle className="w-5 h-5 text-emerald-600" />;
+      return <CheckCircle className="w-5 h-5 text-white/60" />;
     case 'at-risk':
-      return <AlertCircle className="w-5 h-5 text-amber-600" />;
+      return <AlertCircle className="w-5 h-5 text-white/80" />;
     default:
-      return <AlertCircle className="w-5 h-5 text-destructive" />;
+      return <AlertCircle className="w-5 h-5 text-white" />;
   }
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'compliant':
-      return 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800';
+      return 'bg-white/5 border-white/10 backdrop-blur-md shadow-xl text-white/60';
     case 'at-risk':
-      return 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800';
+      return 'bg-white/10 border-white/20 backdrop-blur-md shadow-xl text-white/80';
     default:
-      return 'bg-destructive/5 border-destructive/20';
+      return 'bg-white/15 border-white/40 backdrop-blur-md shadow-xl text-white';
   }
 };
 
@@ -94,35 +94,35 @@ export function ComplianceReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <Card className="p-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Compliant Controls</p>
-              <p className="text-3xl font-bold text-emerald-600 mt-1 tabular-nums">{compliantCount}</p>
+              <p className="text-sm text-white/40 uppercase tracking-widest font-semibold">Compliant Controls</p>
+              <p className="text-3xl font-bold text-white mt-1 tabular-nums">{compliantCount}</p>
             </div>
-            <CheckCircle className="w-10 h-10 text-emerald-600 opacity-50" />
+            <CheckCircle className="w-10 h-10 text-white/20" />
           </div>
         </Card>
 
-        <Card className="p-6 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+        <Card className="p-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">At Risk</p>
-              <p className="text-3xl font-bold text-amber-600 mt-1 tabular-nums">{atRiskCount}</p>
+              <p className="text-sm text-white/40 uppercase tracking-widest font-semibold">At Risk</p>
+              <p className="text-3xl font-bold text-white mt-1 tabular-nums">{atRiskCount}</p>
             </div>
-            <AlertCircle className="w-10 h-10 text-amber-600 opacity-50" />
+            <AlertCircle className="w-10 h-10 text-white/20" />
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Compliance Score</p>
-              <p className="text-3xl font-bold text-primary mt-1 tabular-nums">
+              <p className="text-sm text-white/40 uppercase tracking-widest font-semibold">Compliance Score</p>
+              <p className="text-3xl font-bold text-white mt-1 tabular-nums">
                 {Math.round((compliantCount / complianceItems.length) * 100)}%
               </p>
             </div>
-            <CheckCircle className="w-10 h-10 text-primary opacity-30" />
+            <CheckCircle className="w-10 h-10 text-white/20" />
           </div>
         </Card>
       </div>
@@ -138,7 +138,7 @@ export function ComplianceReport() {
         </div>
 
         {complianceItems.map((item) => (
-          <Card key={item.id} className={`p-4 border-l-4 ${getStatusColor(item.status)}`}>
+          <Card key={item.id} className={`p-4 border-l-4 rounded-xl ${getStatusColor(item.status)}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3 flex-1">
                 {getStatusIcon(item.status)}
@@ -158,12 +158,12 @@ export function ComplianceReport() {
                 </div>
               </div>
               <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap border border-white/10 ${
                   item.status === 'compliant'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    ? 'bg-white/5 text-white/60'
                     : item.status === 'at-risk'
-                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                    : 'bg-destructive/10 text-destructive'
+                    ? 'bg-white/10 text-white/80'
+                    : 'bg-white/20 text-white'
                 }`}
               >
                 {item.status === 'compliant'
@@ -178,7 +178,7 @@ export function ComplianceReport() {
       </div>
 
       {/* Report Generation */}
-      <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/[0.02] border-primary/20">
+      <Card className="p-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Generate Compliance Report</h3>

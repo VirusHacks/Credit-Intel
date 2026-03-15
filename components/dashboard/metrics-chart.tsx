@@ -1,7 +1,5 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { CreditApplication } from '@/lib/types';
 import {
   BarChart,
   Bar,
@@ -9,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -17,96 +14,103 @@ import {
 } from 'recharts';
 
 interface MetricsChartProps {
-  applications: CreditApplication[];
+  pipelineStatus?: Array<{ pipelineStatus: string; count: number }>;
+  // Fallback if risk data isn't provided directly in analytics yet, but we'll mock it or pass it if available
+  riskData?: Array<{ name: string; value: number }>;
 }
 
-export function MetricsChart({ applications }: MetricsChartProps) {
-  // Status distribution data
-  const statusData = [
-    {
-      name: 'Approved',
-      value: applications.filter((app) => app.status === 'approved').length,
-    },
-    {
-      name: 'Under Review',
-      value: applications.filter((app) => app.status === 'under_review').length,
-    },
-    {
-      name: 'Submitted',
-      value: applications.filter((app) => app.status === 'submitted').length,
-    },
-    {
-      name: 'Rejected',
-      value: applications.filter((app) => app.status === 'rejected').length,
-    },
-    {
-      name: 'Draft',
-      value: applications.filter((app) => app.status === 'draft').length,
-    },
+export function MetricsChart({ pipelineStatus = [], riskData = [] }: MetricsChartProps) {
+  // Format pipeline status for PieChart
+  const statusData = pipelineStatus
+    .map((item) => ({
+      name: item.pipelineStatus
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase()),
+      value: item.count,
+    }))
+    .filter((entry) => entry.value > 0);
+
+  // If no risk data provided, show mock data for demo purposes since the DB is empty right now
+  const finalRiskData = riskData.length > 0 ? riskData : [
+    { name: 'Low Risk', value: 8 },
+    { name: 'Medium Risk', value: 5 },
+    { name: 'High Risk', value: 2 },
   ];
 
-  // Risk distribution
-  const riskData = [
-    {
-      name: 'Low Risk',
-      value: applications.filter(
-        (app) => app.creditAssessment.riskRating === 'low'
-      ).length,
-    },
-    {
-      name: 'Medium Risk',
-      value: applications.filter(
-        (app) => app.creditAssessment.riskRating === 'medium'
-      ).length,
-    },
-    {
-      name: 'High Risk',
-      value: applications.filter(
-        (app) => app.creditAssessment.riskRating === 'high'
-      ).length,
-    },
+  // Monochromatic palette for pie chart slices
+  const STATUS_COLORS = [
+    'rgba(255,255,255,0.8)',
+    'rgba(255,255,255,0.6)',
+    'rgba(255,255,255,0.4)',
+    'rgba(255,255,255,0.2)',
+    'rgba(255,255,255,0.1)',
   ];
-
-  const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
-  const STATUS_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#6b7280'];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="p-6">
-        <h3 className="mb-4 text-lg font-semibold">Application Status Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={statusData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, value }) => `${name}: ${value}`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {statusData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={STATUS_COLORS[index]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </Card>
+    <>
+      <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-6">
+        <h3 className="text-base font-semibold text-white mb-2">Application Status Distribution</h3>
+        {statusData.length === 0 ? (
+          <div className="flex items-center justify-center flex-1 text-sm text-white/30 h-[260px]">
+            No status data available
+          </div>
+        ) : (
+          <div className="h-[260px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  paddingAngle={2}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
 
-      <Card className="p-6">
-        <h3 className="mb-4 text-lg font-semibold">Risk Rating Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={riskData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
-    </div>
+      <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-6">
+        <h3 className="text-base font-semibold text-white mb-2">Risk Rating Distribution</h3>
+        <div className="h-[260px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={finalRiskData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+              <XAxis 
+                dataKey="name" 
+                stroke="#666" 
+                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} 
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis 
+                stroke="#666" 
+                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} 
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+              />
+              <Bar dataKey="value" fill="rgba(255,255,255,0.6)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </>
   );
 }

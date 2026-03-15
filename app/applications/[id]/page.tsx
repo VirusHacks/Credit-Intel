@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { MainNav } from '@/components/layout/main-nav';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { AgentActivityFeed } from '@/components/agent/agent-activity-feed';
 import { AnalysisDashboard } from '@/components/analysis/analysis-dashboard';
 import { CamOutputPanel } from '@/components/memo/cam-output-panel';
@@ -94,53 +94,47 @@ const PIPELINE_LABELS: Record<string, string> = {
 };
 
 function PipelineStatusBadge({ status }: { status: string }) {
-  const variants: Record<string, { icon: React.ReactNode; cls: string }> = {
-    not_started: { icon: <Clock className="h-3 w-3" />, cls: 'bg-gray-100 text-gray-700' },
-    ingesting: { icon: <Loader2 className="h-3 w-3 animate-spin" />, cls: 'bg-blue-100 text-blue-700' },
-    analyzing: { icon: <Loader2 className="h-3 w-3 animate-spin" />, cls: 'bg-blue-100 text-blue-700' },
-    awaiting_qualitative: { icon: <AlertTriangle className="h-3 w-3" />, cls: 'bg-amber-100 text-amber-800' },
-    reconciling: { icon: <Loader2 className="h-3 w-3 animate-spin" />, cls: 'bg-purple-100 text-purple-700' },
-    generating_cam: { icon: <Loader2 className="h-3 w-3 animate-spin" />, cls: 'bg-indigo-100 text-indigo-700' },
-    complete: { icon: <CheckCircle2 className="h-3 w-3" />, cls: 'bg-green-100 text-green-700' },
-    failed: { icon: <XCircle className="h-3 w-3" />, cls: 'bg-red-100 text-red-700' },
+  const variants: Record<string, { symbol: string; label: string; weight: string }> = {
+    not_started:          { symbol: '○', label: 'Not Started',    weight: 'font-normal' },
+    ingesting:            { symbol: '◌', label: 'Ingesting',       weight: 'font-medium' },
+    analyzing:            { symbol: '◌', label: 'Analyzing',       weight: 'font-medium' },
+    awaiting_qualitative: { symbol: '⚠', label: 'Awaiting Input',  weight: 'font-semibold' },
+    reconciling:          { symbol: '◌', label: 'Reconciling',     weight: 'font-medium' },
+    generating_cam:       { symbol: '◌', label: 'Generating CAM',  weight: 'font-medium' },
+    complete:             { symbol: '✓', label: 'Complete',         weight: 'font-semibold' },
+    failed:               { symbol: '✗', label: 'Failed',           weight: 'font-bold' },
   };
-  const variant = variants[status] ?? variants.not_started;
+  const v = variants[status] ?? variants.not_started;
+  const isActive = ['ingesting','analyzing','reconciling','generating_cam'].includes(status);
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${variant.cls}`}>
-      {variant.icon}
-      {PIPELINE_LABELS[status] ?? status}
+    <span className={`inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80 ${v.weight}`}>
+      <span className={isActive ? 'animate-pulse' : ''}>{v.symbol}</span>
+      {v.label}
     </span>
   );
 }
 
 function RatingBadge({ rating }: { rating: string | null }) {
-  if (!rating) return <span className="text-gray-400 text-xs">—</span>;
-  const cls =
-    rating === 'Strong' ? 'bg-green-100 text-green-800' :
-      rating === 'Adequate' ? 'bg-blue-100 text-blue-800' :
-        rating === 'Weak' ? 'bg-amber-100 text-amber-800' :
-          'bg-red-100 text-red-800';
-  return <span className={`rounded px-2 py-0.5 text-xs font-semibold ${cls}`}>{rating}</span>;
+  if (!rating) return <span className="text-white/30 text-xs">—</span>;
+  const weight = rating === 'Strong' ? 'font-bold text-white' : rating === 'Adequate' ? 'font-semibold text-white/80' : rating === 'Weak' ? 'font-medium text-white/60' : 'font-normal text-white/40';
+  return <span className={`rounded px-2 py-0.5 text-xs border border-white/10 bg-white/5 ${weight}`}>{rating}</span>;
 }
 
 function ScoreBar({ score }: { score: number | null }) {
-  if (score === null) return <div className="h-1.5 w-full rounded bg-gray-200" />;
-  const color = score >= 70 ? 'bg-green-500' : score >= 50 ? 'bg-amber-500' : 'bg-red-500';
+  if (score === null) return <div className="h-1.5 w-full rounded-full bg-white/10" />;
   return (
-    <div className="h-1.5 w-full rounded bg-gray-200">
-      <div className={`h-1.5 rounded ${color}`} style={{ width: `${score}%` }} />
+    <div className="h-1.5 w-full rounded-full bg-white/10">
+      <div className="h-1.5 rounded-full bg-white/70" style={{ width: `${score}%` }} />
     </div>
   );
 }
 
 function DecisionBadge({ decision }: { decision: string }) {
-  const cls =
-    decision === 'APPROVE' ? 'bg-green-600' :
-      decision === 'CONDITIONAL_APPROVE' ? 'bg-amber-500' :
-        'bg-red-600';
+  const symbol = decision === 'APPROVE' ? '✓' : decision === 'CONDITIONAL_APPROVE' ? '→' : '✗';
+  const weight = decision === 'APPROVE' ? 'border-white/20 bg-white/10 font-semibold' : decision === 'CONDITIONAL_APPROVE' ? 'border-white/10 bg-white/5 font-medium' : 'border-white/30 bg-white/15 font-bold';
   return (
-    <span className={`inline-block rounded px-3 py-1 text-sm font-bold text-white ${cls}`}>
-      {decision.replace('_', ' ')}
+    <span className={`inline-flex items-center gap-1 rounded-md border px-3 py-1 text-sm text-white ${weight}`}>
+      {symbol} {decision.replace('_', ' ')}
     </span>
   );
 }
@@ -266,22 +260,20 @@ export default function ApplicationDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <MainNav />
+      <DashboardLayout>
         <main className="flex items-center justify-center p-20">
           <div className="text-center space-y-3">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
             <p className="text-muted-foreground">Loading application…</p>
           </div>
         </main>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error || !app) {
     return (
-      <div className="min-h-screen bg-background">
-        <MainNav />
+      <DashboardLayout>
         <main className="flex items-center justify-center p-20">
           <div className="text-center space-y-4">
             <XCircle className="h-12 w-12 text-destructive mx-auto" />
@@ -291,7 +283,7 @@ export default function ApplicationDetailPage() {
             </Link>
           </div>
         </main>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -308,35 +300,25 @@ export default function ApplicationDetailPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <MainNav />
-      <main className="mx-auto max-w-[1320px] space-y-6 px-6 py-8">
-
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <Link href="/applications" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Applications
+    <DashboardLayout>
+      <div className="flex flex-col">
+        <h1 className="sticky top-0 z-[10] flex items-center justify-between border-b border-white/10 bg-black/40 px-6 py-4 text-2xl font-medium backdrop-blur-2xl">
+          <div className="flex items-center gap-3">
+            <Link href="/applications" className="text-sm text-white/40 hover:text-white/80 transition-colors">
+              ← Applications
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{app.companyName ?? 'Unnamed Company'}</h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <PipelineStatusBadge status={app.pipelineStatus} />
-              {app.cin && <span className="text-xs text-muted-foreground">CIN: {app.cin}</span>}
-              {app.gstin && <span className="text-xs text-muted-foreground">GSTIN: {app.gstin}</span>}
-              <span className="text-xs text-muted-foreground">ID: {app.id}</span>
-            </div>
+            <span className="text-white/20">/</span>
+            <span className="text-white text-lg font-semibold">{app.companyName ?? 'Unnamed Company'}</span>
           </div>
-
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => void handleRunPipeline()} disabled={actionLoading !== null}
-              className="gap-2">
+              className="gap-2 bg-white text-black hover:bg-white/90 text-sm">
               {actionLoading === 'pipeline' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {['analyzing', 'reconciling', 'generating_cam'].includes(app.pipelineStatus) ? 'Pipeline Running…' : 'Run AI Pipeline'}
             </Button>
             {showQualifyButton && (
               <Link href={`/applications/${app.id}/qualify`}>
-                <Button variant="outline" className="gap-2 border-amber-400 text-amber-700 hover:bg-amber-50">
+                <Button variant="outline" className="gap-2 border-white/20 text-white/60 hover:bg-white/5 hover:text-white text-sm">
                   <FileCheck2 className="h-4 w-4" />
                   Field Qualify
                 </Button>
@@ -344,79 +326,76 @@ export default function ApplicationDetailPage() {
             )}
             {showCAMButton && (
               <Button onClick={() => void handleGenerateCAM()} disabled={actionLoading !== null}
-                className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
+                className="gap-2 bg-white text-black hover:bg-white/90 text-sm">
                 {actionLoading === 'cam' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileBarChart2 className="h-4 w-4" />}
                 Generate CAM
               </Button>
             )}
             {app.pipelineStatus === 'complete' && app.latestCam?.pdfBlobUrl && (
               <a href={`/api/cam/download/${app.id}`} target="_blank" rel="noreferrer">
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 border-white/20 text-white/60 hover:bg-white/5 hover:text-white text-sm">
                   <Download className="h-4 w-4" />
                   Download CAM PDF
                 </Button>
               </a>
             )}
-            <Button variant="ghost" size="icon" onClick={() => void fetchApp()} title="Refresh">
+            <Button variant="ghost" size="icon" onClick={() => void fetchApp()} title="Refresh" className="text-white/40 hover:text-white hover:bg-white/5">
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-        </div>
+        </h1>
 
-        {/* Summary strip */}
-        <Card className="grid gap-4 p-5 sm:grid-cols-4">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase">Requested</p>
-            <p className="mt-1 text-xl font-bold">
-              {app.requestedAmountInr ? `₹${Number(app.requestedAmountInr).toLocaleString('en-IN')}` : '—'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase">Industry</p>
-            <p className="mt-1 font-semibold text-sm">{app.industry ?? '—'}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase">CMR Rank</p>
-            <p className="mt-1 text-xl font-bold">
-              {app.cmrRank !== null ? (
-                <span className={app.cmrRank <= 4 ? 'text-green-600' : app.cmrRank <= 6 ? 'text-amber-600' : 'text-red-600'}>
-                  {app.cmrRank}/10
-                </span>
-              ) : '—'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase">Progress</p>
-            <div className="mt-2 space-y-1">
-              <div className="h-2 w-full rounded bg-secondary">
-                <div className="h-2 rounded bg-primary transition-all duration-500"
-                  style={{ width: `${app.analysisProgress ?? 0}%` }} />
+        <main className="flex flex-col gap-6 p-6">
+          {/* Summary strip */}
+          <div className="grid gap-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 shadow-2xl sm:grid-cols-4">
+            <div>
+              <p className="text-xs font-medium text-white/40 uppercase tracking-wider">Requested</p>
+              <p className="mt-1 text-xl font-bold text-white">
+                {app.requestedAmountInr ? `₹${Number(app.requestedAmountInr).toLocaleString('en-IN')}` : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-white/40 uppercase tracking-wider">Industry</p>
+              <p className="mt-1 font-semibold text-sm text-white">{app.industry ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-white/40 uppercase tracking-wider">CMR Rank</p>
+              <p className="mt-1 text-xl font-bold text-white">
+                {app.cmrRank !== null ? `${app.cmrRank}/10` : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-white/40 uppercase tracking-wider">Progress</p>
+              <div className="mt-2 space-y-1">
+                <div className="h-2 w-full rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-white/70 transition-all duration-500"
+                    style={{ width: `${app.analysisProgress ?? 0}%` }} />
+                </div>
+                <p className="text-xs text-white/40">{app.analysisProgress ?? 0}% complete</p>
               </div>
-              <p className="text-xs text-muted-foreground">{app.analysisProgress ?? 0}% complete</p>
             </div>
           </div>
-        </Card>
 
         {/* Field qualify banner */}
         {showQualifyButton && (
-          <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+          <div className="flex items-start gap-3 rounded-xl border border-white/30 bg-white/10 backdrop-blur-md p-4 shadow-xl">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0 text-white/80" />
             <div className="flex-1">
-              <p className="font-semibold text-amber-800 text-sm">Field qualification required</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="font-semibold text-sm text-white">⚠ Field qualification required</p>
+              <p className="text-xs text-white/60 mt-0.5">
                 Automated analysis complete. A credit officer must submit field observations, or skip to proceed directly to CAM generation.
               </p>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => void handleSkipQualify()}
+              <Button size="sm" variant="ghost" onClick={() => void handleSkipQualify()}
                 disabled={actionLoading !== null}
-                className="gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-100">
-                {actionLoading === 'skip' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                className="gap-1.5 text-xs text-white/60 hover:bg-white/10 hover:text-white">
+                {actionLoading === 'skip' ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
                 Skip &amp; Continue
               </Button>
               <Link href={`/applications/${app.id}/qualify`}>
-                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5">
-                  <FileCheck2 className="h-3.5 w-3.5" />
+                <Button size="sm" className="bg-white text-black hover:bg-white/90 gap-1.5 text-xs">
+                  <FileCheck2 className="h-3 w-3" />
                   Start Field Input
                 </Button>
               </Link>
@@ -425,14 +404,15 @@ export default function ApplicationDetailPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 overflow-x-auto rounded-lg bg-secondary/50 p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-xl bg-black/40 border border-white/10 backdrop-blur-md p-1 shadow-xl">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-white text-foreground shadow-sm dark:bg-card' : 'text-muted-foreground hover:text-foreground'
-                }`}>
+              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === tab.id ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80'
+              }`}>
               {tab.label}
               {tab.id === 'cam' && app.latestCam && (
-                <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-700">
+                <span className="ml-1.5 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-xs font-semibold text-white/60">
                   {app.latestCam.decision.replace('_', ' ')}
                 </span>
               )}
@@ -563,8 +543,9 @@ export default function ApplicationDetailPage() {
           )
         )}
 
-      </main>
-    </div>
+        </main>
+      </div>
+    </DashboardLayout>
   );
 }
 

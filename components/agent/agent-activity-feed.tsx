@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card } from '@/components/ui/card';
 import { CheckCircle2, Brain } from 'lucide-react';
 import { PipelineFlow, type StageInfo, type StageStatus } from './pipeline-flow';
 
@@ -10,7 +9,7 @@ import { PipelineFlow, type StageInfo, type StageStatus } from './pipeline-flow'
 interface PipelineEvent {
   appId: string;
   stage: string;
-  status: 'processing' | 'done' | 'failed';
+  status: 'processing' | 'done' | 'failed' | 'complete';
   progress?: number;
   confidence?: number;
   message?: string;
@@ -173,58 +172,67 @@ export function AgentActivityFeed({ appId, pipelineStatus }: AgentActivityFeedPr
   const progress = (completedCount / totalSteps) * 100;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* ── Summary strip ─────────────────────────────────────────────────── */}
-      <Card className="p-5 bg-linear-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-gray-900">AI Agent Pipeline</h3>
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-white">AI Agent Pipeline</h3>
             {isConnected && !isAlreadyComplete && (
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" />
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-white/80" />
               </span>
             )}
             {isAlreadyComplete && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white">
                 <CheckCircle2 className="h-3 w-3" /> All stages complete
               </span>
             )}
           </div>
-          <span className="text-2xl font-bold text-blue-600">
-            {completedCount}/{totalSteps}
+          <span className="text-xl font-bold text-white tabular-nums tracking-tight">
+            <span className="text-white/40">{completedCount}</span>
+            <span className="text-white/20 mx-1">/</span>
+            {totalSteps}
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        
+        <div className="h-2 w-full overflow-hidden rounded-full bg-[#222222]">
           <motion.div
-            className="bg-linear-to-r from-blue-600 to-indigo-500 h-2 rounded-full"
+            className="h-full bg-white/80 rounded-full"
             initial={{ width: '0%' }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
           />
         </div>
-        <p className="text-sm text-gray-600 mt-2">
-          {completedCount} of {totalSteps} pipeline stages completed
+        
+        <div className="mt-3 flex items-center justify-between text-xs">
+          <p className="text-white/40">
+            {completedCount} of {totalSteps} pipeline stages completed
+          </p>
           {isConnected && !isAlreadyComplete && (
-            <span className="ml-2 text-blue-600 text-xs font-medium animate-pulse">● streaming live</span>
+            <span className="font-medium text-white/80 animate-pulse flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-white"></span>
+              streaming live
+            </span>
           )}
-        </p>
-      </Card>
+        </div>
+      </div>
 
       {/* ── Interactive React Flow diagram ────────────────────────────────── */}
       <PipelineFlow stages={stages} />
 
       {/* ── Live AI reasoning trace ──────────────────────────────────────── */}
       {thinkStream && (
-        <Card className="p-4">
-          <h3 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
-            <Brain className="w-4 h-4 text-indigo-600 animate-pulse" />
+        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-5">
+          <h3 className="font-semibold text-white text-sm mb-3 flex items-center gap-2">
+            <Brain className="w-4 h-4 text-white/50 animate-pulse" />
             AI Reasoning Trace (live)
           </h3>
-          <div className="bg-gray-50 rounded p-3 max-h-56 overflow-y-auto text-xs text-gray-600 font-mono whitespace-pre-wrap leading-relaxed">
+          <div className="rounded-xl bg-black/40 border border-white/10 p-4 max-h-64 overflow-y-auto text-xs text-white/60 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">
             {thinkStream}
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );

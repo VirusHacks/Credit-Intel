@@ -79,31 +79,31 @@ export function MainNav() {
         {/* Right Section */}
         <div className="flex items-center gap-2">
           {user && (
-            <>
-              <div className="hidden items-center gap-2.5 sm:flex">
-                <span className="text-sm text-muted-foreground">{user.email}</span>
-                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                  {user.role}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push('/settings')}
-                className="hidden h-9 w-9 sm:inline-flex"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="hidden h-9 w-9 sm:inline-flex"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </>
+            <div className="hidden items-center gap-2.5 sm:flex">
+              <span className="text-sm text-muted-foreground">{user.email}</span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                {user.role}
+              </span>
+            </div>
           )}
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push('/settings')}
+              className="h-9 w-9"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="flex h-9 items-center gap-1.5 px-3 text-sm font-medium text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </Button>
 
           {/* Mobile Menu Button */}
           <Button

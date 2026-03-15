@@ -52,7 +52,7 @@ const CATEGORIES: CategoryConfig[] = [
     description: 'Physical infrastructure, machinery condition, production capacity, workforce',
     placeholder: 'e.g. Factory in Surat SEZ, 120-loom setup, 85% capacity utilisation. Two new Picanol looms installed in 2024. Workforce of 140, mostly skilled. No labour disputes observed...',
     icon: <Factory className="h-4 w-4" />,
-    dimensionColor: 'bg-blue-100 text-blue-800',
+    dimensionColor: 'bg-white/10 text-white/80 border border-white/20',
   },
   {
     key: 'management_quality',
@@ -61,7 +61,7 @@ const CATEGORIES: CategoryConfig[] = [
     description: 'Promoter background, experience, integrity, succession planning',
     placeholder: 'e.g. Promoter Mr. Rajesh Sharma has 22 years in textile industry. MBA from Nirma University. Honest demeanor, no evasive answers. Second-gen family business, son being groomed...',
     icon: <Users className="h-4 w-4" />,
-    dimensionColor: 'bg-purple-100 text-purple-800',
+    dimensionColor: 'bg-white/10 text-white/80 border border-white/20',
   },
   {
     key: 'collateral_inspection',
@@ -70,7 +70,7 @@ const CATEGORIES: CategoryConfig[] = [
     description: 'Property value, encumbrances, marketability, inspection findings',
     placeholder: 'e.g. Residential plot in Vesu, Surat — current market value ~Rs.1.8Cr. CERSAI search clean. No third-party encumbrances. Title deeds verified with sub-registrar...',
     icon: <Building2 className="h-4 w-4" />,
-    dimensionColor: 'bg-amber-100 text-amber-800',
+    dimensionColor: 'bg-white/10 text-white/80 border border-white/20',
   },
   {
     key: 'customer_relationships',
@@ -79,7 +79,7 @@ const CATEGORIES: CategoryConfig[] = [
     description: 'Key customers, concentration risk, payment track record, repeat business',
     placeholder: 'e.g. Top 3 customers — Aditya Birla Fashion, Reliance Retail, and a Dubai exporter — contribute 42% of revenue. Payment track record clean, 30-45 day DSO...',
     icon: <Handshake className="h-4 w-4" />,
-    dimensionColor: 'bg-green-100 text-green-800',
+    dimensionColor: 'bg-white/10 text-white/80 border border-white/20',
   },
   {
     key: 'industry_context',
@@ -88,7 +88,7 @@ const CATEGORIES: CategoryConfig[] = [
     description: 'Sector outlook, regulatory environment, competition, macro tailwinds/headwinds',
     placeholder: 'e.g. Technical textiles seeing strong demand post PLI scheme. Cotton prices stabilising. Chinese competition reduced due to import duties. GST on textiles normalised...',
     icon: <BarChart3 className="h-4 w-4" />,
-    dimensionColor: 'bg-orange-100 text-orange-800',
+    dimensionColor: 'bg-white/10 text-white/80 border border-white/20',
   },
 ];
 
@@ -162,7 +162,7 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
   if (submitted) {
     return (
       <Card className="flex flex-col items-center gap-4 p-12 text-center">
-        <CheckCircle2 className="h-12 w-12 text-green-500" />
+        <CheckCircle2 className="h-12 w-12 text-white/60" />
         <h2 className="text-xl font-bold">Qualitative Notes Submitted</h2>
         <p className="max-w-md text-muted-foreground">
           Your field observations have been saved. The AI Reconciler will now synthesise
@@ -189,7 +189,7 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
         const hasContent = noteVal.trim().length >= 10;
 
         return (
-          <Card key={field.id} className={`overflow-hidden transition-all ${hasContent ? 'ring-1 ring-green-400' : ''}`}>
+          <Card key={field.id} className={`overflow-hidden transition-all ${hasContent ? 'ring-1 ring-white/40' : ''}`}>
             {/* Header */}
             <button
               type="button"
@@ -197,7 +197,7 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
               className="flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-muted/50"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
                   {cat.icon}
                 </div>
                 <div>
@@ -206,7 +206,7 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
                     <Badge variant="outline" className={`text-xs ${cat.dimensionColor}`}>
                       {cat.fiveCDimension.charAt(0).toUpperCase() + cat.fiveCDimension.slice(1)}
                     </Badge>
-                    {hasContent && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                    {hasContent && <CheckCircle2 className="h-4 w-4 text-white/60" />}
                   </div>
                   <p className="text-xs text-muted-foreground">{cat.description}</p>
                 </div>
@@ -241,7 +241,7 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
                   </Label>
                   <select
                     {...register(`notes.${index}.scoreDelta`, { valueAsNumber: true })}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-white/20 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/40"
                   >
                     {SCORE_DELTA_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -255,7 +255,7 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
       })}
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-xl border border-white/30 bg-white/10 backdrop-blur-md p-3 text-sm text-white/80 shadow-xl">
           {error}
         </div>
       )}

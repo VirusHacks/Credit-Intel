@@ -30,24 +30,36 @@ const PIPELINE_LABELS: Record<string, string> = {
   failed: 'Failed',
 };
 
-const PIPELINE_COLORS: Record<string, string> = {
-  not_started: 'bg-muted text-muted-foreground',
-  ingesting: 'bg-primary/10 text-primary',
-  analyzing: 'bg-primary/10 text-primary',
-  awaiting_qualitative: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  reconciling: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  generating_cam: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
-  complete: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  failed: 'bg-destructive/10 text-destructive',
+const PIPELINE_SYMBOLS: Record<string, string> = {
+  not_started: '○',
+  ingesting: '◌',
+  analyzing: '◌',
+  awaiting_qualitative: '⚠',
+  reconciling: '◌',
+  generating_cam: '◌',
+  complete: '✓',
+  failed: '✗',
+};
+
+// Monochromatic opacity variants — no colors
+const PIPELINE_STYLES: Record<string, string> = {
+  not_started:          'bg-white/5 border-white/10 text-white/40 font-normal',
+  ingesting:            'bg-white/5 border-white/10 text-white/60 font-medium',
+  analyzing:            'bg-white/5 border-white/10 text-white/60 font-medium',
+  awaiting_qualitative: 'bg-white/10 border-white/20 text-white/80 font-semibold',
+  reconciling:          'bg-white/5 border-white/10 text-white/60 font-medium',
+  generating_cam:       'bg-white/5 border-white/10 text-white/60 font-medium',
+  complete:             'bg-white/10 border-white/20 text-white font-semibold',
+  failed:               'bg-white/15 border-white/30 text-white font-bold',
 };
 
 export function ApplicationsTable({ applications, onDelete }: ApplicationsTableProps) {
   if (applications.length === 0) {
     return (
-      <div className="rounded-lg border bg-card p-12 text-center">
-        <p className="text-muted-foreground">No applications found.</p>
+      <div className="flex flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-12 text-center shadow-2xl">
+        <p className="text-white/40 text-sm">No applications found.</p>
         <Link href="/applications/new">
-          <Button className="mt-4">
+          <Button className="mt-4 bg-white text-black hover:bg-white/90">
             Create First Application
           </Button>
         </Link>
@@ -56,54 +68,53 @@ export function ApplicationsTable({ applications, onDelete }: ApplicationsTableP
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
       <table className="w-full text-sm">
-        <thead className="border-b bg-muted/50">
+        <thead className="border-b border-white/10 bg-black/40">
           <tr>
-            <th className="px-4 py-3 text-left font-medium">Company</th>
-            <th className="px-4 py-3 text-left font-medium">Industry</th>
-            <th className="px-4 py-3 text-left font-medium">Pipeline</th>
-            <th className="px-4 py-3 text-right font-medium">CMR Rank</th>
-            <th className="px-4 py-3 text-right font-medium">Requested</th>
-            <th className="px-4 py-3 text-left font-medium">Created</th>
-            <th className="px-4 py-3 text-center font-medium">Actions</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/30">Company</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/30">Industry</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/30">Pipeline</th>
+            <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/30">CMR Rank</th>
+            <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/30">Requested</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/30">Created</th>
+            <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white/30">Actions</th>
           </tr>
         </thead>
         <tbody>
           {applications.map((app) => (
-            <tr key={app.id} className="border-b hover:bg-muted/50">
-              <td className="px-4 py-3 font-medium">{app.companyName ?? '—'}</td>
-              <td className="px-4 py-3 text-muted-foreground">{app.industry ?? '—'}</td>
+            <tr key={app.id} className="border-b border-white/10 hover:bg-white/5">
+              <td className="px-4 py-3 font-medium text-white">{app.companyName ?? '—'}</td>
+              <td className="px-4 py-3 text-white/40">{app.industry ?? '—'}</td>
               <td className="px-4 py-3">
-                <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${PIPELINE_COLORS[app.pipelineStatus] ?? PIPELINE_COLORS.not_started}`}>
+                <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-xs ${PIPELINE_STYLES[app.pipelineStatus] ?? PIPELINE_STYLES.not_started}`}>
+                  <span>{PIPELINE_SYMBOLS[app.pipelineStatus] ?? '○'}</span>
                   {PIPELINE_LABELS[app.pipelineStatus] ?? app.pipelineStatus}
                 </span>
               </td>
               <td className="px-4 py-3 text-right">
                 {app.cmrRank !== null ? (
-                  <span className={`font-semibold ${app.cmrRank <= 4 ? 'text-green-700' : app.cmrRank <= 6 ? 'text-amber-700' : 'text-red-700'}`}>
-                    {app.cmrRank}/10
-                  </span>
-                ) : '—'}
+                  <span className="font-semibold tabular-nums text-white">{app.cmrRank}/10</span>
+                ) : <span className="text-white/30">—</span>}
               </td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-right text-white/60 tabular-nums">
                 {app.requestedAmountInr
                   ? `₹${Number(app.requestedAmountInr).toLocaleString('en-IN')}`
                   : '—'}
               </td>
-              <td className="px-4 py-3 text-muted-foreground">
+              <td className="px-4 py-3 text-white/40">
                 {new Date(app.createdAt).toLocaleDateString('en-IN')}
               </td>
               <td className="px-4 py-3 text-center">
                 <div className="flex items-center justify-center gap-2">
                   <Link href={`/applications/${app.id}`}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="View">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white/40 hover:bg-white/10 hover:text-white" title="View">
                       <Eye className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-white/30 hover:bg-white/5 hover:text-white/60"
                     onClick={() => onDelete?.(app.id)} title="Delete">
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </td>

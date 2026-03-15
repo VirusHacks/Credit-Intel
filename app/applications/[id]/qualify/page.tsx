@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { MainNav } from '@/components/layout/main-nav';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { QualitativeForm } from '@/components/forms/qualitative-form';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,19 +47,17 @@ export default function QualifyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <MainNav />
+      <DashboardLayout>
         <main className="flex items-center justify-center p-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-background">
-        <MainNav />
+      <DashboardLayout>
         <main className="p-6 sm:p-10">
           <div className="mx-auto max-w-lg text-center">
             <AlertCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
@@ -72,13 +70,12 @@ export default function QualifyPage() {
             </Link>
           </div>
         </main>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <MainNav />
+    <DashboardLayout>
       <main className="mx-auto max-w-3xl space-y-6 p-6 sm:p-10">
         {/* Header */}
         <div>
@@ -103,13 +100,13 @@ export default function QualifyPage() {
         </div>
 
         {/* Pipeline stage banner */}
-        <Card className="flex items-start gap-3 border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+        <Card className="flex items-start gap-3 border border-white/10 bg-white/5 backdrop-blur-xl p-4 shadow-2xl rounded-xl">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-white/60" />
           <div>
-            <p className="text-sm font-medium text-amber-900">
+            <p className="text-sm font-medium text-white">
               Automated analysis complete — awaiting field input
             </p>
-            <p className="mt-0.5 text-xs text-amber-700">
+            <p className="mt-0.5 text-xs text-white/60">
               The AI agents have completed document extraction and signal computation.
               Your on-site observations below will be merged with the quantitative signals
               before the Reconciler generates the final 5Cs score and CAM.
@@ -125,6 +122,6 @@ export default function QualifyPage() {
           }}
         />
       </main>
-    </div>
+    </DashboardLayout>
   );
 }
