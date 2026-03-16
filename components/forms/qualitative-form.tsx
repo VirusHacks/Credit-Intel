@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Factory, Users, Building2, Handshake, BarChart3,
-  ChevronDown, ChevronUp, CheckCircle2, Loader2,
+  ChevronDown, ChevronUp, CheckCircle2, Loader2, Wand2,
 } from 'lucide-react';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -92,6 +92,36 @@ const CATEGORIES: CategoryConfig[] = [
   },
 ];
 
+// ─── Sample data ─────────────────────────────────────────────────────────────
+
+const SAMPLE_DATA: Array<{ noteText: string; scoreDelta: number }> = [
+  {
+    noteText:
+      'Factory located in Bhiwadi Industrial Area, Rajasthan. 3 production lines with CNC machines (2022 vintage). Total built-up area ~18,000 sq ft. Housekeeping excellent, no idle machinery observed. Current utilisation ~78%. Workforce of 210 — 160 on payroll, 50 contract workers. No labour disputes in last 3 years. Canteen and safety equipment in place.',
+    scoreDelta: 5,
+  },
+  {
+    noteText:
+      'Promoter Mr. Arvind Mehta (54) has 28 years in steel fabrication. Previously worked at Tata Steel for 9 years before starting this venture in 2001. Articulate, detailed knowledge of order book and financials. No evasiveness on NPA questions — confirmed one restructured account in 2019 (COVID relief) fully regularised. Son (29, IIT Bombay) being groomed for ops. Succession plan clearly discussed.',
+    scoreDelta: 10,
+  },
+  {
+    noteText:
+      'Primary collateral: Industrial plot (1.2 acres) + factory building in RIICO Industrial Area, Bhiwadi. Current DM circle rate Rs 4,200/sq yd; estimated market value Rs 3.8 Cr. CERSAI search clean — no existing charge. Title deeds verified (original 1998 purchase + mutation). No litigation on property as per e-Courts search. Secondary: Promoter residential flat in Sector 14, Gurgaon — self-declared value Rs 1.6 Cr.',
+    scoreDelta: 5,
+  },
+  {
+    noteText:
+      'Top 5 customers contribute 58% of revenue. Anchor customer: Larsen & Toubro (EPC division) — 3-year supply agreement, ~Rs 4.2 Cr/year. Others include Tata Projects, KEC International, and two mid-size EPC contractors. Payment cycle: 45–60 days; no overdues beyond 90 days in last 2 years. Customer retention rate ~85% over 5-year period. Some concentration risk with L&T but mitigated by diversification efforts.',
+    scoreDelta: 5,
+  },
+  {
+    noteText:
+      'Steel fabrication for infrastructure / EPC sector seeing strong tailwind due to government capex push (National Infrastructure Pipeline Rs 111 Lakh Cr). Input costs (HR coil, angles) have stabilised in Q3 FY26 after 18-month volatility. Chinese dumping risk partially mitigated by anti-dumping duties on certain steel products. Competitive landscape: ~6 similar-sized players in NCR region. Company has ISO 9001:2015 certification, giving edge in government tenders.',
+    scoreDelta: 5,
+  },
+];
+
 const SCORE_DELTA_OPTIONS = [
   { value: 10, label: '+10 (Strong positive)' },
   { value: 5, label: '+5 (Moderate positive)' },
@@ -114,7 +144,7 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { register, control, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
+  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       notes: CATEGORIES.map((c) => ({
@@ -128,6 +158,14 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
 
   const { fields } = useFieldArray({ control, name: 'notes' });
   const notesValues = watch('notes');
+
+  const fillSampleData = () => {
+    SAMPLE_DATA.forEach((sample, index) => {
+      setValue(`notes.${index}.noteText`, sample.noteText, { shouldValidate: true });
+      setValue(`notes.${index}.scoreDelta`, sample.scoreDelta, { shouldValidate: true });
+    });
+    setExpandedCategory('factory_operations');
+  };
 
   const onSubmit = async (values: FormValues) => {
     // Filter out empty notes
@@ -174,12 +212,24 @@ export function QualitativeForm({ appId, onSuccess }: QualitativeFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold">Qualitative Field Assessment</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Complete your on-site observations. Each note directly influences the 5Cs score.
-          At least one section must be filled.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold">Qualitative Field Assessment</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Complete your on-site observations. Each note directly influences the 5Cs score.
+            At least one section must be filled.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={fillSampleData}
+          className="shrink-0 gap-1.5 border-amber-500/40 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50 hover:text-amber-200"
+        >
+          <Wand2 className="h-3.5 w-3.5" />
+          Fill Sample Data
+        </Button>
       </div>
 
       {fields.map((field, index) => {

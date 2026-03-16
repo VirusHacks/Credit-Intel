@@ -42,17 +42,16 @@ const PIPELINE_SYMBOLS: Record<string, string> = {
   failed: "✗",
 };
 
-// Monochromatic opacity variants — no colors
 const PIPELINE_STYLES: Record<string, string> = {
-  not_started: "bg-white/5 border-white/10 text-white/40 font-normal",
-  ingesting: "bg-white/5 border-white/10 text-white/60 font-medium",
-  analyzing: "bg-white/5 border-white/10 text-white/60 font-medium",
+  not_started: "bg-slate-800/60 border-slate-600/50 text-slate-400 font-normal",
+  ingesting: "bg-blue-950/60 border-blue-500/50 text-blue-300 font-medium",
+  analyzing: "bg-violet-950/60 border-violet-500/50 text-violet-300 font-medium",
   awaiting_qualitative:
-    "bg-white/10 border-white/20 text-white/80 font-semibold",
-  reconciling: "bg-white/5 border-white/10 text-white/60 font-medium",
-  generating_cam: "bg-white/5 border-white/10 text-white/60 font-medium",
-  complete: "bg-white/10 border-white/20 text-white font-semibold",
-  failed: "bg-white/15 border-white/30 text-white font-bold",
+    "bg-amber-950/60 border-amber-500/60 text-amber-300 font-semibold",
+  reconciling: "bg-cyan-950/60 border-cyan-500/50 text-cyan-300 font-medium",
+  generating_cam: "bg-purple-950/60 border-purple-500/50 text-purple-300 font-medium",
+  complete: "bg-emerald-950/60 border-emerald-500/60 text-emerald-300 font-semibold",
+  failed: "bg-red-950/60 border-red-500/60 text-red-400 font-bold",
 };
 
 export function ApplicationsTable({
@@ -105,7 +104,7 @@ export function ApplicationsTable({
           {applications.map((app) => (
             <tr
               key={app.id}
-              className="border-b border-white/10 hover:bg-white/5"
+              className="group border-b border-white/10 hover:bg-white/5"
             >
               <td className="px-4 py-3 font-medium text-white">
                 {app.companyName ?? "—"}
@@ -113,10 +112,9 @@ export function ApplicationsTable({
               <td className="px-4 py-3 text-white/40">{app.industry ?? "—"}</td>
               <td className="px-4 py-3">
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-xs ${
-                    PIPELINE_STYLES[app.pipelineStatus] ??
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-xs ${PIPELINE_STYLES[app.pipelineStatus] ??
                     PIPELINE_STYLES.not_started
-                  }`}
+                    }`}
                 >
                   <span>{PIPELINE_SYMBOLS[app.pipelineStatus] ?? "○"}</span>
                   {PIPELINE_LABELS[app.pipelineStatus] ?? app.pipelineStatus}
@@ -143,7 +141,7 @@ export function ApplicationsTable({
                 className="px-4 py-4 text-center"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                   <Link href={`/applications/${app.id}`}>
                     <Button
                       variant="ghost"

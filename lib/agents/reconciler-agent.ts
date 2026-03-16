@@ -381,42 +381,170 @@ function parseReconcilerJSON(
   jsonText: string,
   discrepancies: DiscrepancyResult[],
 ): { fiveCsScores: FiveCsScores; recommendation: LoanRecommendation; swot: SwotAnalysis | null } {
-  // Strip markdown fences if model leaked them
-  const cleaned = jsonText
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/, '')
-    .trim();
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(cleaned) as Record<string, unknown>;
-  } catch {
-    // Fallback: produce a conservative default if JSON is malformed
-    console.error('ReconcilerAgent: failed to parse JSON, using fallback', cleaned.slice(0, 300));
+  const parsed = parseReconcilerPayload(jsonText);
+  if (!parsed) {
+    console.error('ReconcilerAgent: failed to parse JSON, using fallback', jsonText.slice(0, 300));
     return buildFallback(discrepancies);
   }
 
-  const fcs = parsed.fiveCsScores as FiveCsScores;
-  const recommendation: LoanRecommendation = {
-    decision: (parsed.decision as string) as LoanRecommendation['decision'],
-    recommendedAmountInr: (parsed.recommendedAmountInr as string) ?? '₹0',
-    recommendedRatePercent: (parsed.recommendedRatePercent as string) ?? '0%',
-    originalAsk: (parsed.originalAsk as string) ?? '',
-    reductionRationale: parsed.reductionRationale as string | undefined,
-    conditions: (parsed.conditions as string[]) ?? [],
-  };
+  const fcs = normalizeFiveCsScores(parsed.fiveCsScores as Record<string, unknown> | undefined);
+  const recommendation = normalizeRecommendation(parsed);
 
-  const rawSwot = parsed.swot as Record<string, string[]> | undefined;
+  const rawSwot = parsed.swot as Record<string, unknown> | undefined;
   const swot: SwotAnalysis | null = rawSwot
     ? {
-        strengths: rawSwot.strengths ?? [],
-        weaknesses: rawSwot.weaknesses ?? [],
-        opportunities: rawSwot.opportunities ?? [],
-        threats: rawSwot.threats ?? [],
+        strengths: toStringArray(rawSwot.strengths),
+        weaknesses: toStringArray(rawSwot.weaknesses),
+        opportunities: toStringArray(rawSwot.opportunities),
+        threats: toStringArray(rawSwot.threats),
       }
     : null;
 
   return { fiveCsScores: fcs, recommendation, swot };
+}
+
+function parseReconcilerPayload(text: string): Record<string, unknown> | null {
+  const cleaned = text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .replace(/```(?:json)?/gi, '')
+    .trim();
+
+  const candidates = new Set<string>([cleaned]);
+
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    candidates.add(cleaned.slice(firstBrace, lastBrace + 1).trim());
+  }
+
+  for (const objText of extractBalancedObjects(cleaned)) {
+    candidates.add(objText);
+  }
+
+  for (const candidate of candidates) {
+    const parsed = tryParseObject(candidate);
+    if (isReconcilerShape(parsed)) return parsed;
+
+    const repaired = tryParseObject(repairLikelyJson(candidate));
+    if (isReconcilerShape(repaired)) return repaired;
+  }
+
+  return null;
+}
+
+function tryParseObject(candidate: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(candidate) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractBalancedObjects(text: string): string[] {
+  const objects: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === '{') {
+      if (depth === 0) start = i;
+      depth += 1;
+    } else if (ch === '}') {
+      if (depth > 0) depth -= 1;
+      if (depth === 0 && start >= 0) {
+        const obj = text.slice(start, i + 1).trim();
+        if (obj.length > 2) objects.push(obj);
+        start = -1;
+      }
+    }
+  }
+
+  return objects;
+}
+
+function repairLikelyJson(candidate: string): string {
+  return candidate
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/,\s*([}\]])/g, '$1');
+}
+
+function isReconcilerShape(obj: Record<string, unknown> | null): obj is Record<string, unknown> {
+  if (!obj) return false;
+  const fcs = obj.fiveCsScores;
+  const decision = obj.decision;
+  return Boolean(
+    fcs && typeof fcs === 'object' && !Array.isArray(fcs)
+      && typeof decision === 'string'
+      && ['APPROVE', 'CONDITIONAL_APPROVE', 'REJECT'].includes(decision),
+  );
+}
+
+function normalizeFiveCsScores(raw: Record<string, unknown> | undefined): FiveCsScores {
+  const normDim = (d: unknown) => {
+    const dim = (d && typeof d === 'object' && !Array.isArray(d)) ? d as Record<string, unknown> : {};
+    const rawScore = typeof dim.score === 'number' ? dim.score : parseInt(String(dim.score ?? 50), 10);
+    const score = Number.isNaN(rawScore) ? 50 : Math.max(0, Math.min(100, rawScore));
+    const rating = typeof dim.rating === 'string' && dim.rating.trim().length > 0 ? dim.rating : 'Adequate';
+    const explanation = typeof dim.explanation === 'string' && dim.explanation.trim().length > 0
+      ? dim.explanation
+      : 'No explanation provided by model.';
+    return { score, rating, explanation };
+  };
+
+  const src = raw ?? {};
+  return {
+    character: normDim(src.character),
+    capacity: normDim(src.capacity),
+    capital: normDim(src.capital),
+    collateral: normDim(src.collateral),
+    conditions: normDim(src.conditions),
+  };
+}
+
+function normalizeRecommendation(parsed: Record<string, unknown>): LoanRecommendation {
+  const decisionRaw = parsed.decision;
+  const decision: LoanRecommendation['decision'] =
+    decisionRaw === 'APPROVE' || decisionRaw === 'CONDITIONAL_APPROVE' || decisionRaw === 'REJECT'
+      ? decisionRaw
+      : 'CONDITIONAL_APPROVE';
+
+  return {
+    decision,
+    recommendedAmountInr: typeof parsed.recommendedAmountInr === 'string' ? parsed.recommendedAmountInr : '₹0',
+    recommendedRatePercent: typeof parsed.recommendedRatePercent === 'string' ? parsed.recommendedRatePercent : '0%',
+    originalAsk: typeof parsed.originalAsk === 'string' ? parsed.originalAsk : '',
+    reductionRationale: typeof parsed.reductionRationale === 'string' ? parsed.reductionRationale : undefined,
+    conditions: toStringArray(parsed.conditions),
+  };
+}
+
+function toStringArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0) : [];
 }
 
 function buildFallback(discrepancies: DiscrepancyResult[]): {
